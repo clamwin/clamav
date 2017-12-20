@@ -453,10 +453,17 @@ int logg(const char *str, ...)
         }
         else if (*buff == '#' || *buff == '~')
         {
+#ifndef CLAMWIN /* Sherpya : Hack here */
             fprintf(logg_fp, "%s", buff + 1);
         }
         else
             fprintf(logg_fp, "%s", buff);
+#else
+            fprintf(logg_fp, "%s", PATH_PLAIN((buff + 1)));
+        }
+        else
+            fprintf(logg_fp, "%s", PATH_PLAIN(buff));
+#endif
 
         if (flush)
             fflush(logg_fp);
@@ -569,6 +576,7 @@ void mprintf(const char *str, ...)
     buff[len - 1] = 0;
 
 #ifdef _WIN32
+#ifndef CLAMWIN
     do
     {
         int tmplen = len + 1;
@@ -601,6 +609,7 @@ void mprintf(const char *str, ...)
         len = sizeof(buffer) + 1;
     } while (0);
 #endif
+#endif
     if (buff[0] == '!')
     {
         if (!mprintf_stdout)
@@ -631,10 +640,17 @@ void mprintf(const char *str, ...)
         }
         else if (buff[0] == '~')
         {
+#ifndef CLAMWIN /* Sherpya : Hack here */
             fprintf(fd, "%s", &buff[1]);
         }
         else
             fprintf(fd, "%s", buff);
+#else
+            fprintf(fd, "%s", PATH_PLAIN((&buff[1])));
+        }
+        else
+            fprintf(fd, "%s", PATH_PLAIN(buff));
+#endif
     }
 
     if (fd == stdout)
