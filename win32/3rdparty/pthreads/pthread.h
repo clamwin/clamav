@@ -109,6 +109,10 @@
 /* Include everything */
 #endif
 
+#if _MSC_VER >= 1900
+#define HAVE_STRUCT_TIMESPEC 1
+#endif
+
 #if defined(_UWIN)
 #   define HAVE_STRUCT_TIMESPEC 1
 #   define HAVE_SIGNAL_H        1
