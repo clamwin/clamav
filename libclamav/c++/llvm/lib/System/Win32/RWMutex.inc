@@ -17,6 +17,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "Win32.h"
+#include <stdlib.h>
 
 // FIXME: Windows does not have reader-writer locks pre-Vista.  If you want
 // real reader-writer locks, you a pthreads implementation for Windows.

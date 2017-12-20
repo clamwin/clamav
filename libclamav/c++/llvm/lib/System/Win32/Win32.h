@@ -17,7 +17,9 @@
 //===----------------------------------------------------------------------===//
 
 // Require at least Windows 2000 API.
+#ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0500
+#endif
 
 #include "llvm/Config/config.h"     // Get autoconf configuration settings
 #include "windows.h"

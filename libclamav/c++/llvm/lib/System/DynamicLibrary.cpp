@@ -44,7 +44,7 @@ void llvm::sys::DynamicLibrary::AddSymbol(const char* symbolName,
   (*ExplicitSymbols)[symbolName] = symbolValue;
 }
 
-#ifdef LLVM_ON_WIN32
+#if defined(LLVM_ON_WIN32) && !defined(__MINGW64__)
 
 #include "Win32/DynamicLibrary.inc"
 
