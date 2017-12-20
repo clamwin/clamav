@@ -547,12 +547,13 @@ int upx_inflatelzma(const char *src, uint32_t ssize, char *dst, uint32_t *dsize,
   struct CLI_LZMA l;
   uint32_t magic[]={0xb16,0xb1e,0};
   unsigned char fake_lzmahdr[5];
+  uint8_t lc, lp, pb;
 
   memset(&l, 0, sizeof(l));
   cli_writeint32(fake_lzmahdr + 1, *dsize);
-  uint8_t lc = properties & 0xff;
-  uint8_t lp = (properties >> 8) & 0xff;
-  uint8_t pb = (properties >> 16) & 0xff; 
+  lc = properties & 0xff;
+  lp = (properties >> 8) & 0xff;
+  pb = (properties >> 16) & 0xff; 
   if (lc >= 9 || lp >= 5 || pb >= 5)
       return -1;
 
