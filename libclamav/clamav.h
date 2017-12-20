@@ -370,6 +370,20 @@ CL_VIRUS = Blacklisted by callback - scan result is set to CL_VIRUS
 */
 extern void cl_engine_set_clcb_post_scan(struct cl_engine *engine, clcb_post_scan callback);
 
+typedef cl_error_t (*clcb_progress)(int fd, int bytes, void *context);
+/* PROGRESS-SCAN
+Input:
+fd      = File descriptor which is was scanned
+bytes   = Scanned bytes
+context = Opaque application provided data
+
+Output:
+CL_CLEAN = Continue scanning
+CL_BREAK = Whitelisted by callback - break, scan result is set to CL_CLEAN
+CL_VIRUS = Blacklisted by callback - break, scan result is set to CL_VIRUS
+*/
+extern void cl_engine_set_clcb_progress(struct cl_engine *engine, clcb_progress callback, void *context);
+
 typedef void (*clcb_virus_found)(int fd, const char *virname, void *context);
 /* VIRUS FOUND
    Called for each virus found.

@@ -17,6 +17,7 @@ CLAMAV_PUBLIC {
     cl_set_clcb_msg;
     cl_engine_set_clcb_pre_scan;
     cl_engine_set_clcb_post_scan;
+    cl_engine_set_clcb_progress;
     cl_engine_set_clcb_virus_found;
     cl_engine_set_clcb_sigload;
     cl_engine_set_clcb_pre_cache;
@@ -183,6 +184,7 @@ CLAMAV_PRIVATE {
     cli_versig;
     cli_versig2;
     cli_filecopy;
+    cli_filetype2;
     cli_ftw;
     cli_unlink;
     cli_writen;
