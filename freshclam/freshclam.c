@@ -203,6 +203,13 @@ help (void)
     mprintf
         ("    --update-db=DBNAME                   only update database DBNAME\n");
 
+#ifdef CLAMWIN
+    mprintf("\nWindows Service:\n");
+    mprintf("    --daemon                             Start in Service mode (internal)\n");
+    mprintf("    --install                            Install Windows Service\n");
+    mprintf("    --uninstall                          Uninstall Windows Service\n");
+#endif
+
     mprintf ("\n");
 }
 
@@ -317,6 +324,23 @@ main (int argc, char **argv)
         mprintf ("!Can't parse command line options\n");
         return FCE_INIT;
     }
+
+#ifdef CLAMWIN
+    if (optget(opts, "install")->enabled)
+    {
+        svc_install("FreshClam", "ClamWin Free Antivirus Database Updater",
+            "Updates virus pattern database for ClamWin Free Antivirus application");
+        optfree(opts);
+        return 0;
+    }
+
+    if (optget(opts, "uninstall")->enabled)
+    {
+        svc_uninstall("FreshClam", 1);
+        optfree(opts);
+        return 0;
+    }
+#endif
 
     if (optget (opts, "help")->enabled)
     {
@@ -622,7 +646,9 @@ main (int argc, char **argv)
     *updtmpdir = 0;
 
 #ifdef _WIN32
+#ifndef CLAMWIN
     signal (SIGINT, sighandler);
+#endif
 #else
     memset (&sigact, 0, sizeof (struct sigaction));
     sigact.sa_handler = sighandler;
@@ -685,6 +711,11 @@ main (int argc, char **argv)
             }
             mprintf_disabled = 1;
         }
+#endif
+#ifdef CLAMWIN
+        mprintf_disabled = 1;
+        svc_register("FreshClam");
+        svc_ready();
 #endif
 
         if ((opt = optget (opts, "PidFile"))->enabled)
@@ -863,3 +894,16 @@ char *get_hostid(void *cbdata)
 
     return strdup(hostid);
 }
+
+#ifdef CLAMWIN
+BOOL WINAPI cw_stop_ctrl_handler(DWORD CtrlType)
+{
+    if (CtrlType == CTRL_C_EVENT)
+    {
+        SetConsoleCtrlHandler(cw_stop_ctrl_handler, FALSE);
+        fprintf(stderr, "[freshclam] Control+C pressed...\n");
+	    exit(0);
+    }
+    return TRUE;
+}
+#endif

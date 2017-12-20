@@ -163,6 +163,9 @@ static int isremote(const struct optstruct *opts) {
 /* Turns a relative path into an absolute one
  * Returns a pointer to the path (which must be 
  * freed by the caller) or NULL on error */
+#ifdef CLAMWIN
+#define makeabs cw_normalizepath
+#else
 static char *makeabs(const char *basepath) {
     int namelen;
     char *ret;
@@ -191,6 +194,7 @@ static char *makeabs(const char *basepath) {
     ret[PATH_MAX] = '\0';
     return ret;
 }
+#endif
 
 /* Recursively scans a path with the given scantype
  * Returns non zero for serious errors, zero otherwise */

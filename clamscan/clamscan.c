@@ -156,6 +156,11 @@ int main(int argc, char **argv)
 
     memset(&info, 0, sizeof(struct s_info));
 
+#ifdef CLAMWIN
+    if(optget(opts, "no-summary")->enabled)
+        SetConsoleCtrlHandler(cw_stop_ctrl_handler, FALSE);
+#endif
+
     gettimeofday(&t1, NULL);
 
     ret = scanmanager(opts);
@@ -216,6 +221,8 @@ void help(void)
     mprintf("    --infected            -i             Only print infected files\n");
     mprintf("    --suppress-ok-results -o             Skip printing OK files\n");
     mprintf("    --bell                               Sound bell on virus detection\n");
+    mprintf("    --show-progress                      Print progress indicator for each file\n");
+
     mprintf("\n");
     mprintf("    --tempdir=DIRECTORY                  Create temporary files in DIRECTORY\n");
     mprintf("    --leave-temps[=yes/no(*)]            Do not remove temporary files\n");
@@ -236,6 +243,11 @@ void help(void)
     mprintf("    --exclude-dir=REGEX                  Don't scan directories matching REGEX\n");
     mprintf("    --include=REGEX                      Only scan file names matching REGEX\n");
     mprintf("    --include-dir=REGEX                  Only scan directories matching REGEX\n");
+#ifdef CLAMWIN
+    mprintf("    --memory                             Scan loaded executable modules\n");
+    mprintf("    --kill                -k             Kill/Unload infected loaded modules\n");
+    mprintf("    --unload              -u             Unload infected modules from processes\n");
+#endif
     mprintf("\n");
     mprintf("    --bytecode[=yes(*)/no]               Load bytecode from the database\n");
     mprintf("    --bytecode-unsigned[=yes/no(*)]      Load unsigned bytecode\n");
@@ -299,3 +311,31 @@ void help(void)
     mprintf("(**) Certain files (e.g. documents, archives, etc.) may in turn contain other\n");
     mprintf("   files inside. The above options ensure safe processing of this kind of data.\n\n");
 }
+
+#ifdef CLAMWIN
+BOOL WINAPI cw_stop_ctrl_handler(DWORD CtrlType)
+{
+    double mb;
+    if (CtrlType == CTRL_C_EVENT)
+    {
+        SetConsoleCtrlHandler(cw_stop_ctrl_handler, FALSE);
+        logg("\nScanning aborted...\n");
+        logg("\n----------- SCAN SUMMARY -----------\n");
+        logg("Known viruses: %u\n", info.sigs);
+        logg("Engine version: %s\n", cl_retver());
+        logg("Scanned directories: %u\n", info.dirs);
+        logg("Scanned files: %u\n", info.files);
+        logg("Infected files: %u\n", info.ifiles);
+        if(info.errors)
+            logg("Total errors: %u\n", info.errors);
+        if(notremoved)
+            logg("Not removed: %u\n", notremoved);
+        if(notmoved)
+            logg("Not moved: %u\n", notmoved);
+        mb = info.blocks * (CL_COUNT_PRECISION / 1024) / 1024.0;
+        logg("Data scanned: %2.2lf MB\n", mb);
+        exit(1);
+    }
+    return TRUE;
+}
+#endif
