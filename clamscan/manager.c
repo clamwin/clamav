@@ -65,6 +65,93 @@
 #include "libclamav/readdb.h"
 #include "libclamav/cltypes.h"
 
+#ifdef CLAMWIN /* scan memory */
+extern int scanmem(struct cl_engine *trie, const struct optstruct *opts, int options);
+static HANDLE console;
+/* workaround to garbled line output when doing CR */
+static inline void clear_console_line()
+{
+    DWORD w;
+    COORD coord;
+    CONSOLE_SCREEN_BUFFER_INFO info;
+
+    if (GetConsoleScreenBufferInfo(console, &info))
+    {
+        coord.X = info.dwCursorPosition.X;
+        coord.Y = info.dwCursorPosition.Y;
+        FillConsoleOutputCharacter(console, ' ', info.dwSize.X - coord.X, coord, &w);
+        coord.X = 0;
+        SetConsoleCursorPosition(console, coord);
+    }
+}
+
+#define do_line(fmt, ...) do {              \
+    if (console) {                          \
+        mprintf(fmt, __VA_ARGS__);          \
+        clear_console_line();               \
+    }                                       \
+    else mprintf(fmt "\r", __VA_ARGS__);    \
+} while (0)
+
+#define do_rotate(ctx, fmt) do {            \
+    if (console) {                          \
+        rotate(ctx, fmt);                   \
+        clear_console_line();               \
+    }                                       \
+    else rotate(ctx, fmt "\r");             \
+} while (0)
+#else /* CLAMWIN */
+#define do_line(fmt, ...) mprintf(fmt "\r", __VA_ARGS__)
+#define do_rotate(ctx, fmt) rotate(ctx, fmt "\r")
+#endif
+
+/* Callback */
+typedef struct _cb_data_t
+{
+    const char *filename;
+    size_t size, count;
+    int oldvalue;
+    int fd;
+} cb_data_t;
+
+static cb_data_t cbdata;
+static const char *rotation = "|/-\\";
+
+static void rotate(cb_data_t *cbctx, const char *fmt)
+{
+    if ((cbctx->count++ % 100000) == 0)
+    {
+        mprintf(fmt, cbctx->filename, rotation[cbctx->oldvalue]);
+        cbctx->oldvalue = (cbctx->oldvalue + 1) % 4;
+    }
+}
+
+static int sigloadcallback(const char *type, const char *name, unsigned int custom, void *context)
+{
+    do_rotate(context, "~%s%c");
+    return 0;
+}
+
+cl_error_t scancallback(int desc, int bytes, void *context)
+{
+    cb_data_t *cbctx = context;
+    if (desc == cbctx->fd)
+    {
+        int percent;
+        cbctx->count= bytes;
+        percent = MIN(100, (int) (((double) cbctx->count) * 100.0f / ((double) cbctx->size)));
+        if (percent != cbctx->oldvalue)
+        {
+            do_line("~%s: [%3i%%]", cbctx->filename, percent);
+            cbctx->oldvalue = percent;
+        }
+    }
+    else /* archives or stdin */
+        do_rotate(cbctx, "~%s: [%c]");
+
+    return 1;
+}
+
 #ifdef C_LINUX
 dev_t procdev;
 #endif
@@ -383,9 +470,19 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
 
     if((fd = safe_open(filename, O_RDONLY|O_BINARY)) == -1) {
         logg("^Can't open file %s: %s\n", filename, strerror(errno));
+#ifdef CLAMWIN
+        if (errno != EACCES)
+#endif
         info.errors++;
         return;
     }
+
+    cbdata.count = 0;
+    cbdata.fd = fd;
+    cbdata.oldvalue = 0;
+    cbdata.filename = filename;
+    cbdata.size = lseek(fd, 0, SEEK_END);
+    lseek(fd, 0, SEEK_SET);
 
     data.chain = &chain;
     data.filename = filename;
@@ -421,10 +518,24 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
         free(chain.chains[i]);
 
     free(chain.chains);
-    close(fd);
 
-    if(ret == CL_VIRUS && action)
-        action(filename);
+    if(ret == CL_VIRUS && action) {
+        cli_file_t type = CL_TYPE_ANY;
+        if (optget(opts, "keep-mbox")->enabled) {
+            fmap_t *maptype = fmap(fd, 0, 0);
+            if (maptype) {
+                type = cli_filetype2(maptype, engine, CL_TYPE_BINARY_DATA);
+                funmap(maptype);
+            }
+        }
+        close(fd);
+        if (type == CL_TYPE_MAIL)
+            logg("~%s: no action performed on a mailbox\n", filename);
+        else
+            action(filename);
+    }
+    else
+        close(fd);
 }
 
 static void scandirs(const char *dirname, struct cl_engine *engine, const struct optstruct *opts, unsigned int options, unsigned int depth, dev_t dev)
@@ -494,6 +605,9 @@ static void scandirs(const char *dirname, struct cl_engine *engine, const struct
                     else
                         sprintf(fname, "%s"PATHSEP"%s", dirname, dent->d_name);
 
+#ifdef CLAMWIN
+                    NORMALIZE_PATH(fname, 1, continue);
+#endif
                     /* stat the file */
                     if(LSTAT(fname, &sb) != -1) {
                         if(!optget(opts, "cross-fs")->enabled) {
@@ -549,6 +663,12 @@ static int scanstdin(const struct cl_engine *engine, const struct optstruct *opt
     size_t bread;
     FILE *fs;
     struct clamscan_cb_data data;
+
+    cbdata.count = 0;
+    cbdata.oldvalue = 0;
+    cbdata.fd = fileno(stdin);
+    cbdata.filename = "stdin";
+    cbdata.size = -1;
 
     if(optget(opts, "tempdir")->enabled) {
         tmpdir = optget(opts, "tempdir")->strarg;
@@ -813,6 +933,10 @@ int scanmanager(const struct optstruct *opts)
         }
     }
 
+    /* setup signature loading callback */
+    cbdata.filename = "Loading virus signature database, please wait... ";
+    cl_engine_set_clcb_sigload(engine, sigloadcallback, &cbdata);
+
     if((opt = optget(opts, "database"))->active) {
         while(opt) {
             if((ret = cl_load(opt->strarg, engine, &info.sigs, dboptions))) {
@@ -862,10 +986,25 @@ int scanmanager(const struct optstruct *opts)
         return 2;
     }
 
+    cl_engine_set_clcb_sigload(engine, NULL, NULL);
+    mprintf(cbdata.filename);
+    mprintf("done\n");
+
     if(optget(opts, "archive-verbose")->enabled) {
         cl_engine_set_clcb_meta(engine, meta);
         cl_engine_set_clcb_pre_cache(engine, pre);
         cl_engine_set_clcb_post_scan(engine, post);
+    }
+
+    /* setup callback */
+    if(optget(opts, "show-progress")->enabled) {
+#ifdef CLAMWIN
+        console = GetStdHandle(STD_OUTPUT_HANDLE);
+        if (GetFileType(console) != FILE_TYPE_CHAR)
+            console = NULL;
+#endif
+        memset(&cbdata, 0, sizeof(cb_data_t));
+        cl_engine_set_clcb_progress(engine, scancallback, &cbdata);
     }
 
     /* set limits */
@@ -1127,6 +1266,12 @@ int scanmanager(const struct optstruct *opts)
         procdev = sb.st_dev;
 #endif
 
+#ifdef CLAMWIN
+    /* scan only memory */
+    if (optget(opts, "memory")->enabled && (!opts->filename && !optget(opts, "file-list")->enabled))
+        ret = scanmem(engine, opts, options);
+    else
+#endif
     /* check filetype */
     if(!opts->filename && !optget(opts, "file-list")->enabled) {
         /* we need full path for some reasons (eg. archive handling) */
@@ -1144,18 +1289,28 @@ int scanmanager(const struct optstruct *opts)
         if(opts->filename && optget(opts, "file-list")->enabled)
             logg("^Only scanning files from --file-list (files passed at cmdline are ignored)\n");
 
+#ifdef CLAMWIN
+    /* scan first memory if requested */
+    if (optget(opts, "memory")->enabled)
+        ret = scanmem(engine, opts, options);
+#endif
         while((filename = filelist(opts, &ret)) && (file = strdup(filename))) {
+#ifdef CLAMWIN
+        NORMALIZE_PATH(file, 1, continue);
+#endif
             if(LSTAT(file, &sb) == -1) {
                 perror(file);
                 logg("^%s: Can't access file\n", file);
                 ret = 2;
             } else {
+#ifndef CLAMWIN
                 for(i = strlen(file) - 1; i > 0; i--) {
                     if(file[i] == *PATHSEP)
                         file[i] = 0;
                     else
                         break;
                 }
+#endif
 
                 if(S_ISLNK(sb.st_mode)) {
                     if(dirlnk == 0 && filelnk == 0) {

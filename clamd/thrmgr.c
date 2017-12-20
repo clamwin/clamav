@@ -627,6 +627,10 @@ static void *thrmgr_worker(void *arg)
 	int retval, must_exit = FALSE, stats_inited = FALSE;
 	struct timespec timeout;
 
+#ifdef CLAMWIN
+    cw_disablefsredir();
+#endif
+
 	/* loop looking for work */
 	for (;;) {
 		if (pthread_mutex_lock(&(threadpool->pool_mutex)) != 0) {
@@ -684,6 +688,9 @@ static void *thrmgr_worker(void *arg)
 		logg("!Fatal: mutex unlock failed\n");
 		exit(-2);
 	}
+#ifdef CLAMWIN
+    cw_revertfsredir();
+#endif
 	return NULL;
 }
 
