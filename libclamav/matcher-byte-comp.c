@@ -78,16 +78,17 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
     char *comp_end = NULL;
     char *hexcpy = NULL;
 
-    if (!hexsig || !(*hexsig) || !root || !virname) {
-        return CL_ENULLARG;
-    }
-
     /* we'll be using these to help the root matcher struct keep track of each loaded byte compare pattern */
     struct cli_bcomp_meta **newmetatable; 
     uint32_t bcomp_count = 0;
 
-    /* zero out our byte compare data struct and tie it to the root struct's mempool instance */
     struct cli_bcomp_meta *bcomp;
+
+    if (!hexsig || !(*hexsig) || !root || !virname) {
+        return CL_ENULLARG;
+    }
+
+    /* zero out our byte compare data struct and tie it to the root struct's mempool instance */
     bcomp = (struct cli_bcomp_meta *) mpool_calloc(root->mempool, 1, sizeof(*bcomp));
     if (!bcomp) {
         cli_errmsg("cli_bcomp_addpatt: Unable to allocate memory for new byte compare meta\n");
