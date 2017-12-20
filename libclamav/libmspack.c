@@ -297,8 +297,8 @@ static void mspack_fmap_message(struct mspack_file *file, const char *fmt, ...)
 
 static void *mspack_fmap_alloc(struct mspack_system *self, size_t num)
 {
-	UNUSEDPARAM(self);
 	void * addr = malloc(num);
+	UNUSEDPARAM(self);
 	if (addr) {
 		memset(addr, 0, num);
 	}
@@ -320,16 +320,16 @@ static void mspack_fmap_copy(void *src, void *dst, size_t num)
 }
 
 static struct mspack_system mspack_sys_fmap_ops = {
-	.open = mspack_fmap_open,
-	.close = mspack_fmap_close,
-	.read = mspack_fmap_read,
-	.write = mspack_fmap_write,
-	.seek = mspack_fmap_seek,
-	.tell = mspack_fmap_tell,
-	.message = mspack_fmap_message,
-	.alloc = mspack_fmap_alloc,
-	.free = mspack_fmap_free,
-	.copy = mspack_fmap_copy,
+	mspack_fmap_open,
+	mspack_fmap_close,
+	mspack_fmap_read,
+	mspack_fmap_write,
+	mspack_fmap_seek,
+	mspack_fmap_tell,
+	mspack_fmap_message,
+	mspack_fmap_alloc,
+	mspack_fmap_free,
+	mspack_fmap_copy,
 };
 
 static int cli_scanfile(const char *filename, cli_ctx *ctx)
@@ -356,8 +356,8 @@ int cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
     int files;
 	int virus_num = 0;
 	struct mspack_name mspack_fmap = {
-		.fmap	= *ctx->fmap,
-		.org	= sfx_offset,
+		*ctx->fmap,
+		sfx_offset,
 	};
 	struct mspack_system_ex ops_ex;
 	memset(&ops_ex, 0, sizeof(struct mspack_system_ex));
@@ -463,7 +463,7 @@ int cli_scanmschm(cli_ctx *ctx)
 	int files;
 	int virus_num = 0;
 	struct mspack_name mspack_fmap = {
-		.fmap = *ctx->fmap,
+		*ctx->fmap
 	};
 	struct mspack_system_ex ops_ex;
 	memset(&ops_ex, 0, sizeof(struct mspack_system_ex));
