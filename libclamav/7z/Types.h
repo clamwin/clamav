@@ -6,10 +6,6 @@
 
 #include <stddef.h>
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
 #include <zconf.h>
 
 #ifndef EXTERN_C_BEGIN
