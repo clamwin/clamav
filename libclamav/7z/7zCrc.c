@@ -2,8 +2,8 @@
 2009-11-23 : Igor Pavlov : Public domain */
 
 #if defined(_WIN32)
-#include <WinSock2.h>
-#include <Windows.h>
+#include <winsock2.h>
+#include <windows.h>
 #endif
 
 #include "7zCrc.h"
