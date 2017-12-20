@@ -30,8 +30,8 @@
 #include <errno.h>
 
 #if defined(_WIN32)
-#include <WinSock2.h>
-#include <Windows.h>
+#include <winsock2.h>
+#include <windows.h>
 #endif
 
 #include "libclamav/others.h"
