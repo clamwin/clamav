@@ -154,6 +154,19 @@ const struct clam_option __clam_options[] = {
 
     { NULL, "archive-verbose", 'a', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", ""},
 
+    { NULL, "show-progress", 0, CLOPT_TYPE_BOOL, NULL, 0, NULL, 0, OPT_CLAMSCAN, "", "" },
+    { NULL, "keep-mbox", 0, CLOPT_TYPE_BOOL, NULL, 0, NULL, 0, OPT_CLAMSCAN, "", "" },
+
+#ifdef _WIN32
+    { NULL, "install", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM, "", "" },
+    { NULL, "uninstall", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM, "", "" },
+    { NULL, "daemon", 'd', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "", "" },
+
+    { NULL, "memory", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", "" },
+    { NULL, "kill", 'k', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", "" },
+    { NULL, "unload", 'u', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", "" },
+#endif
+
     /* cmdline only - deprecated */
     { NULL, "bytecode-trust-all", 't', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", ""},
     { NULL, "http-proxy", 0, CLOPT_TYPE_STRING, NULL, 0, NULL, 0, OPT_FRESHCLAM | OPT_DEPRECATED, "", "" },
@@ -788,8 +801,8 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 	int i, err = 0, lc = 0, sc = 0, opt_index, line = 0, ret;
 	struct optstruct *opts = NULL, *opts_last = NULL, *opt;
 	char buffer[512], *buff;
-	struct option longopts[MAXCMDOPTS];
-	char shortopts[MAXCMDOPTS];
+	struct option longopts[MAXCMDOPTS + 1];
+	char shortopts[MAXCMDOPTS + 1];
 	regex_t regex;
 	long long numarg, lnumarg;
 	int regflags = REG_EXTENDED | REG_NOSUB;

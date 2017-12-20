@@ -305,6 +305,9 @@ int cl_init(unsigned int initoptions)
     if (lt_init() == 0) {
 	cli_rarload();
     }
+#ifdef CLAMWIN
+    cw_init();
+#endif
     gettimeofday(&tv, (struct timezone *) 0);
     srand(pid + tv.tv_usec*(pid+1) + clock());
     rc = bytecode_init();
@@ -390,6 +393,10 @@ struct cl_engine *cl_engine_new(void)
 	free(new);
 	return NULL;
     }
+
+#ifdef CLAMWIN
+    cl_engine_set_clcb_post_scan(new, cw_postscan_check);
+#endif
 
     crtmgr_init(&(new->cmgr));
     if(crtmgr_add_roots(new, &(new->cmgr)))  {
@@ -1473,6 +1480,11 @@ void cl_engine_set_clcb_post_scan(struct cl_engine *engine, clcb_post_scan callb
 
 void cl_engine_set_clcb_virus_found(struct cl_engine *engine, clcb_virus_found callback) {
     engine->cb_virus_found = callback;
+}
+
+void cl_engine_set_clcb_progress(struct cl_engine *engine, clcb_progress callback, void *context) {
+    engine->cb_progress = callback;
+    engine->cb_progress_ctx = callback ? context : NULL;
 }
 
 void cl_engine_set_clcb_sigload(struct cl_engine *engine, clcb_sigload callback, void *context) {

@@ -592,6 +592,9 @@ int cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli
     int ret;
 
     if (((flags & CLI_FTW_TRIM_SLASHES) || pathchk) && path[0] && path[1]) {
+#ifdef CLAMWIN
+    NORMALIZE_PATH(path, 0, return -1);
+#else
 	char *pathend;
 	/* trim slashes so that dir and dir/ behave the same when
 	 * they are symlinks, and we are not following symlinks */
@@ -601,6 +604,7 @@ int cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli
 	pathend = path + strlen(path);
 	while (pathend > path && pathend[-1] == *PATHSEP) --pathend;
 	*pathend = '\0';
+#endif
     }
     if(pathchk && pathchk(path, data) == 1)
 	return CL_SUCCESS;
@@ -698,7 +702,9 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
 		sprintf(fname, PATHSEP"%s", dent->d_name);
 	    else
 		sprintf(fname, "%s"PATHSEP"%s", dirname, dent->d_name);
-
+#ifdef CLAMWIN
+        NORMALIZE_PATH(fname, 1, continue);
+#endif
 	    if(pathchk && pathchk(fname, data) == 1) {
 		free(fname);
 		continue;
@@ -866,7 +872,7 @@ char *cli_gentemp(const char *dir)
 
     mdir = dir ? dir : cli_gettmpdir();
 
-    len = strlen(mdir) + 42 + 4;
+    len = strlen(mdir) + 76;
     name = (char *) cli_calloc(len, sizeof(char));
     if(!name) {
 	cli_dbgmsg("cli_gentemp('%s'): out of memory\n", mdir);
@@ -894,7 +900,7 @@ char *cli_gentemp(const char *dir)
 	return NULL;
     }
 
-	snprintf(name, len, "%s"PATHSEP"clamav-%s.tmp", mdir, tmp);
+	snprintf(name, len, "%s"PATHSEP"clamav-%s.%08x.clamtmp", mdir, tmp, getpid());
     free(tmp);
 
     return(name);
