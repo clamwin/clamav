@@ -956,12 +956,13 @@ getfile_mirman (const char *srcfile, const char *destfile,
         char currdir[512];
 
         if (getcwd (currdir, sizeof (currdir)))
-            logg ("!getfile: Can't create new file %s in %s\n", destfile,
-                  currdir);
+            logg ("!getfile: Can't create new file %s in %s: %s\n", destfile,
+                  currdir, strerror(errno));
         else
-            logg ("!getfile: Can't create new file %s in the current directory\n", destfile);
-
+            logg ("!getfile: Can't create new file %s in the current directory: %s\n", destfile, strerror(errno));
+#ifndef _WIN32
         logg ("Hint: The database directory must be writable for UID %d or GID %d\n", getuid (), getgid ());
+#endif
         return FCE_DBDIRACCESS;
     }
 
@@ -1628,7 +1629,7 @@ test_database_wrap (const char *file, const char *newdb, int bytecode)
         return FCE_TESTFAIL;
     }
 }
-#else
+#elif defined(_MSC_VER)
 static int
 test_database_wrap (const char *file, const char *newdb, int bytecode)
 {
@@ -1642,6 +1643,12 @@ test_database_wrap (const char *file, const char *newdb, int bytecode)
     {
     }
     return ret;
+}
+#else
+static int
+test_database_wrap (const char *file, const char *newdb, int bytecode)
+{
+    return test_database (file, newdb, bytecode);
 }
 #endif
 
@@ -2542,7 +2549,9 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
     if (mkdir (updtmpdir, 0755))
     {
         logg ("!Can't create temporary directory %s\n", updtmpdir);
+#ifndef _WIN32
         logg ("Hint: The database directory must be writable for UID %d or GID %d\n", getuid (), getgid ());
+#endif
         return FCE_DBDIRACCESS;
     }
 

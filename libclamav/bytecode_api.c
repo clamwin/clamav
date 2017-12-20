@@ -1345,13 +1345,14 @@ uint32_t cli_bcapi_engine_scan_options_ex(struct cli_bc_ctx *ctx, const uint8_t 
 {
     uint32_t i = 0;
     char *option_name_l = NULL;
+    cli_ctx *cctx;
 
     if (ctx == NULL || option_name == NULL || name_len == 0) {
         cli_warnmsg("engine_scan_options_ex: Invalid arguments!");
         return 0;
     }
 
-    cli_ctx *cctx = (cli_ctx*)ctx->ctx;
+    cctx = (cli_ctx*)ctx->ctx;
     if (cctx == NULL || cctx->options == NULL) {
         cli_warnmsg("engine_scan_options_ex: Invalid arguments!");
         return 0;
