@@ -28,8 +28,17 @@
 #endif
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
+/* include openssl/ssl.h if you need to use openssl based functions */
+struct env_md_ctx_st;
+struct evp_pkey_st;
+struct x509_st;
+struct asn1_string_st;
+struct X509_crl_st;
+typedef struct env_md_ctx_st EVP_MD_CTX;
+typedef struct evp_pkey_st EVP_PKEY;
+typedef struct x509_st X509;
+typedef struct asn1_string_st ASN1_TIME;
+typedef struct X509_crl_st X509_CRL;
 
 /* Certain OSs already use 64bit variables in their stat struct */
 #define STAT64_BLACKLIST !defined(__FreeBSD__) && !defined(__APPLE__)
@@ -58,6 +67,7 @@
 
 #define UNUSEDPARAM(x) (void)(x)
 
+#include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 

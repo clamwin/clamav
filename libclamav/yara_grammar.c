@@ -97,6 +97,7 @@
 #else
 #define YYDEBUG 1 /* Set for development testing */
 #include "libclamav/yara_clam.h"
+#include "libclamav/str.h"
 #include "clamav-config.h"
 #include "libclamav/yara_grammar.h"
 #include "libclamav/yara_lexer.h"
