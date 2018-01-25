@@ -108,6 +108,7 @@
 #include "msxml.h"
 #include "tiff.h"
 #include "hwp.h"
+#include "msdoc.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
