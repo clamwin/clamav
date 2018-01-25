@@ -42,7 +42,7 @@
 #endif
 #endif
 #else
-#include <Windows.h>
+#include <windows.h>
 #include <tchar.h>
 #endif
 
@@ -552,7 +552,7 @@ char *clamav_stats_get_hostid(void *cbdata)
 {
     HW_PROFILE_INFO HwProfInfo;
 
-    if (!GetCurrentHwProfile(&HwProfInfo))
+    if (!GetCurrentHwProfileA(&HwProfInfo))
         return strdup(STATS_ANON_UUID);
 
     return strdup(HwProfInfo.szHwProfileGuid);

@@ -62,11 +62,14 @@
 #include "libclamav/str.h"
 #include "iowrap.h"
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+
 #if defined(_WIN32)
 char * strptime(const char *buf, const char *fmt, struct tm *tm);
 #endif
 
-#if defined(_WIN32)
+#if defined(_MSC_VER)
 #define EXCEPTION_PREAMBLE __try {
 #define EXCEPTION_POSTAMBLE } __except (filter_memcpy(GetExceptionCode(), GetExceptionInformation())) { \
     winres=1; \
