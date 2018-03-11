@@ -20,7 +20,7 @@ using namespace sys;
 //=== WARNING: Implementation here must contain only TRULY operating system
 //===          independent code.
 //===----------------------------------------------------------------------===//
-
+#ifdef _MSC_VER
 int
 Program::ExecuteAndWait(const Path& path,
                         const char** args,
@@ -46,7 +46,7 @@ Program::ExecuteNoWait(const Path& path,
   Program prg;
   prg.Execute(path, args, envp, redirects, memoryLimit, ErrMsg);
 }
-
+#endif
 // Include the platform-specific parts of this class.
 #ifdef LLVM_ON_UNIX
 #include "Unix/Program.inc"

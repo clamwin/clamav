@@ -41,6 +41,7 @@ namespace sys {
   public:
 
     Program();
+#ifdef _MSC_VER
     ~Program();
 
     /// Return process ID of this program.
@@ -118,14 +119,14 @@ namespace sys {
     /// Path object that is empty (invalid) if the program could not be found.
     /// @brief Construct a Program by finding it by name.
     static Path FindProgramByName(const std::string& name);
-
+#endif /* _MSC_VER */
     // These methods change the specified standard stream (stdin,
     // stdout, or stderr) to binary mode. They return true if an error
     // occurred
     static bool ChangeStdinToBinary();
     static bool ChangeStdoutToBinary();
     static bool ChangeStderrToBinary();
-
+#ifdef _MSC_VER
     /// A convenience function equivalent to Program prg; prg.Execute(..);
     /// prg.Wait(..);
     /// @see Execute, Wait
@@ -147,7 +148,7 @@ namespace sys {
                               std::string* ErrMsg = 0);
 
     /// @}
-
+#endif /* _MSC_VER */
   };
 }
 }

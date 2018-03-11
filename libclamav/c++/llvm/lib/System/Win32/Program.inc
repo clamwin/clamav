@@ -33,7 +33,7 @@ namespace llvm {
 using namespace sys;
 
 Program::Program() : Data_(0) {}
-
+#ifdef _MSC_VER
 Program::~Program() {
   if (Data_) {
     Win32ProcessInfo* wpi = reinterpret_cast<Win32ProcessInfo*>(Data_);
@@ -390,7 +390,7 @@ Program::Kill(std::string* ErrMsg) {
 
   return false;
 }
-
+#endif /* _MSC_VER */
 bool Program::ChangeStdinToBinary(){
   int result = _setmode( _fileno(stdin), _O_BINARY );
   return result == -1;
