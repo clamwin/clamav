@@ -1563,10 +1563,11 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 
             q2 = pdf_nextobject(q, dict_remaining);
             if (q2 && isdigit(*q2)) {
+                uint32_t objid;
                 const char * q2_old = NULL;
                 dict_remaining -= (off_t)(q2 - q);
 
-                uint32_t objid = atoi(q2) << 8;
+                objid = atoi(q2) << 8;
                 while (isdigit(*q2))
                     q2++;
 
