@@ -194,7 +194,7 @@
  */
 
 /* Try to avoid including windows.h */
-#if (defined(__MINGW64__) || defined(__MINGW32__)) && defined(__cplusplus)
+#if 0 // (defined(__MINGW64__) || defined(__MINGW32__)) && defined(__cplusplus)
 #define PTW32_INCLUDE_WINDOWS_H
 #endif
 
