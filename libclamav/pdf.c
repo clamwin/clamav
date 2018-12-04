@@ -554,7 +554,7 @@ cl_error_t pdf_findobj(struct pdf_struct *pdf)
          */
         if (q - 4 > start) {
             const char* lastfile = q - 4;
-            if (0 != strncmp(lastfile, "\%\%EOF", 5)) {
+            if (0 != strncmp(lastfile, "%%EOF", 5)) {
                 /* Nope, wasn't %%EOF */
                 cli_dbgmsg("pdf_findobj: Failed to parse object objid (# objects found: %u)\n", pdf->nobjs);
                 /* Skip past the "obj" thing, and continue. */
@@ -565,7 +565,7 @@ cl_error_t pdf_findobj(struct pdf_struct *pdf)
             /* Yup, Looks, like the file continues after %%EOF.  
              * Probably another revision.  Keep parsing... */
             q++;
-            cli_dbgmsg("pdf_findobj: \%\%EOF detected before end of file, at %zu\n", (size_t)q);
+            cli_dbgmsg("pdf_findobj: %%%%EOF detected before end of file, at %zu\n", (size_t)q);
         } else {
             /* Failed parsing at the very beginning */
             cli_dbgmsg("pdf_findobj: Failed to parse object objid (# objects found: %u)\n", pdf->nobjs);
