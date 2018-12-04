@@ -41,7 +41,7 @@
 #define CLOPT_TYPE_SIZE     3    /* number possibly followed by modifiers (M/m or K/k) */
 #define CLOPT_TYPE_BOOL     4    /* boolean */
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(CLAMWIN)
 extern char _DATADIR[MAX_PATH];
 extern char _CONFDIR[MAX_PATH];
 extern char _CONFDIR_CLAMD[MAX_PATH];
