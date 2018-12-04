@@ -617,6 +617,9 @@ int cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli
     int ret;
 
     if (((flags & CLI_FTW_TRIM_SLASHES) || pathchk) && path[0] && path[1]) {
+#ifdef CLAMWIN
+        NORMALIZE_PATH(path, 0, return -1);
+#else
         char *pathend;
         /* trim slashes so that dir and dir/ behave the same when
 	 * they are symlinks, and we are not following symlinks */
@@ -626,6 +629,7 @@ int cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli
         pathend = path + strlen(path);
         while (pathend > path && pathend[-1] == *PATHSEP) --pathend;
         *pathend = '\0';
+#endif /* CLAMWIN */
     }
     if (pathchk && pathchk(path, data) == 1)
         return CL_SUCCESS;
@@ -710,7 +714,9 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
                 sprintf(fname, PATHSEP "%s", dent->d_name);
             else
                 sprintf(fname, "%s" PATHSEP "%s", dirname, dent->d_name);
-
+#ifdef CLAMWIN
+            NORMALIZE_PATH(fname, 1, continue);
+#endif
             if (pathchk && pathchk(fname, data) == 1) {
                 free(fname);
                 continue;
@@ -1161,6 +1167,8 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath)
         goto done;
     }
 
+#elif CLAMWIN
+    return cw_get_filepath_from_filedesc(desc, filepath);
 #elif _WIN32
     DWORD dwRet                   = 0;
     intptr_t hFile                = _get_osfhandle(desc);
@@ -1218,7 +1226,7 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath)
 
 done:
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(CLAMWIN)
     if (NULL != long_evaluated_filepath) {
         free(long_evaluated_filepath);
     }
@@ -1226,7 +1234,13 @@ done:
     return status;
 }
 
-cl_error_t cli_realpath(const char *file_name, char **real_filename)
+cl_error_t cli_realpath(const char* file_name, char** real_filename)
+#ifdef CLAMWIN
+{
+    *real_filename = cli_strdup(file_name);
+    return CL_SUCCESS;
+}
+#else
 {
     char *real_file_path = NULL;
     cl_error_t status    = CL_EARG;
@@ -1275,3 +1289,4 @@ done:
 
     return status;
 }
+#endif
