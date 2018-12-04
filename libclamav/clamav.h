@@ -542,6 +542,27 @@ typedef cl_error_t (*clcb_post_scan)(int fd, int result, const char *virname, vo
 extern void cl_engine_set_clcb_post_scan(struct cl_engine *engine, clcb_post_scan callback);
 
 /**
+ * @brief Progress-scan callback.
+ *
+ * TODO
+ *
+ * @param fd        File descriptor which is was scanned
+ * @param bytes     Scanned bytes
+ * @param context   Opaque application provided data.
+ * @return          CL_CLEAN = Continue scanning
+ * @return          CL_BREAK = Whitelisted by callback - break, scan result is set to CL_CLEAN
+ * @return          CL_VIRUS = Blacklisted by callback - break, scan result is set to CL_VIRUS
+ */
+typedef cl_error_t (*clcb_progress)(int fd, int bytes, void *context);
+/**
+ * @brief Set a custom progress-scan callback function.
+ *
+ * @param engine    The initialized scanning engine.
+ * @param callback  The callback function pointer.
+ */
+extern void cl_engine_set_clcb_progress(struct cl_engine *engine, clcb_progress callback, void *context);
+
+/**
  * @brief Post-scan callback.
  *
  * Called for each signature match.

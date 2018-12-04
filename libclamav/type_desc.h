@@ -70,24 +70,31 @@ struct cli_apiglobal {
 #ifdef __cplusplus
 extern "C" {
 #endif
-extern const struct cli_bc_type cli_apicall_types[];
-extern const unsigned cli_apicall_maxtypes;
+/* win32 dll needs explicit dllimport for variables */
+#if defined(_WIN32) && defined(__cplusplus)
+#define BCAPI __declspec(dllimport)
+#else
+#define BCAPI
+#endif
 
-extern const struct cli_apiglobal cli_globals[];
+BCAPI extern const struct cli_bc_type cli_apicall_types[];
+BCAPI extern const unsigned cli_apicall_maxtypes;
 
-extern const struct cli_apicall cli_apicalls[];
-extern const cli_apicall_int2 cli_apicalls0[];
-extern const cli_apicall_pointer cli_apicalls1[];
-extern const cli_apicall_int1 cli_apicalls2[];
-extern const cli_apicall_malloclike cli_apicalls3[];
-extern const cli_apicall_ptrbuffdata cli_apicalls4[];
-extern const cli_apicall_allocobj cli_apicalls5[];
-extern const cli_apicall_bufget cli_apicalls6[];
-extern const cli_apicall_int3 cli_apicalls7[];
-extern const cli_apicall_2bufs cli_apicalls8[];
-extern const cli_apicall_ptrbufid cli_apicalls9[];
-extern const unsigned cli_apicall_maxapi;
-extern const unsigned cli_apicall_maxglobal;
+BCAPI extern const struct cli_apiglobal cli_globals[];
+
+BCAPI extern const struct cli_apicall cli_apicalls[];
+BCAPI extern const cli_apicall_int2 cli_apicalls0[];
+BCAPI extern const cli_apicall_pointer cli_apicalls1[];
+BCAPI extern const cli_apicall_int1 cli_apicalls2[];
+BCAPI extern const cli_apicall_malloclike cli_apicalls3[];
+BCAPI extern const cli_apicall_ptrbuffdata cli_apicalls4[];
+BCAPI extern const cli_apicall_allocobj cli_apicalls5[];
+BCAPI extern const cli_apicall_bufget cli_apicalls6[];
+BCAPI extern const cli_apicall_int3 cli_apicalls7[];
+BCAPI extern const cli_apicall_2bufs cli_apicalls8[];
+BCAPI extern const cli_apicall_ptrbufid cli_apicalls9[];
+BCAPI extern const unsigned cli_apicall_maxapi;
+BCAPI extern const unsigned cli_apicall_maxglobal;
 
 #ifdef __cplusplus
 }

@@ -99,6 +99,12 @@ static void help(void)
     printf("    --config-file=FILE       -c FILE        Read configuration from FILE\n");
     printf("\n");
     printf("Pass in - as the filename for stdin.\n");
+#ifdef CLAMWIN
+    printf("Windows Service:\n");
+    printf("    --daemon                                Start in Service mode (internal)\n");
+    printf("    --install                               Install Windows Service\n");
+    printf("    --uninstall                             Uninstall Windows Service\n");
+#endif
     printf("\n");
 }
 
@@ -179,6 +185,7 @@ int main(int argc, char **argv)
             perror("setrlimit");
 #endif
         debug_mode = 1;
+        cl_debug();
     }
 
     /* check foreground option from command line to override config file */
@@ -329,6 +336,21 @@ int main(int argc, char **argv)
         }
 #endif /* _WIN32 */
     }
+
+#ifdef CLAMWIN
+    if (optget(opts, "install")->enabled) {
+        svc_install("ClamD", "ClamWin Free Antivirus Scanner Service",
+            "Provides virus scanning facilities for ClamWin Free Antivirus application");
+        optfree(opts);
+        return 0;
+    }
+
+    if (optget(opts, "uninstall")->enabled) {
+        svc_uninstall("ClamD", 1);
+        optfree(opts);
+        return 0;
+    }
+#endif
 
     /* drop privileges */
 #ifndef _WIN32
@@ -618,6 +640,13 @@ int main(int argc, char **argv)
             logg("#Max A-C depth set to %u\n", (unsigned int)opt->numarg);
         }
 
+#ifdef CLAMWIN
+        if (optget(opts, "daemon")->enabled) {
+            cl_engine_set_clcb_sigload(engine, svc_checkpoint, NULL);
+            svc_register("ClamD");
+        }
+#endif
+
         if ((ret = cl_load(dbdir, engine, &sigs, dboptions))) {
             logg("!%s\n", cl_strerror(ret));
             ret = 1;
@@ -786,6 +815,11 @@ int main(int argc, char **argv)
 #endif
         }
 
+#elif defined(CLAMWIN)
+        if (optget(opts, "daemon")->enabled) {
+            cl_engine_set_clcb_sigload(engine, NULL, NULL);
+            svc_ready();
+        }
 #endif
 
         if (nlsockets == 0) {
@@ -823,3 +857,23 @@ int main(int argc, char **argv)
 
     return ret;
 }
+
+#ifdef CLAMWIN
+extern HANDLE event_wake_recv;
+BOOL WINAPI cw_stop_ctrl_handler(DWORD CtrlType)
+{
+    if (CtrlType == CTRL_C_EVENT)
+    {
+        SetConsoleCtrlHandler(cw_stop_ctrl_handler, FALSE);
+        fprintf(stderr, "[clamd] Control+C pressed...\n");
+
+        pthread_mutex_lock(&exit_mutex);
+        progexit = 1;
+        pthread_mutex_unlock(&exit_mutex);
+
+        if (event_wake_recv)
+            SetEvent(event_wake_recv);
+    }
+    return TRUE;
+}
+#endif
