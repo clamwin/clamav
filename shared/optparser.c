@@ -71,7 +71,7 @@
 #define FLAG_HIDDEN   4 /* don't print in clamconf --generate-config */
 #define FLAG_REG_CASE 8 /* case-sensitive regex matching */
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(CLAMWIN)
 static bool is_initialized = false;
 
 #ifndef BACKUP_DATADIR
@@ -199,6 +199,19 @@ const struct clam_option __clam_options[] = {
     {NULL, "no-trace-showsource", 's', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC, "Don't show source line during tracing", ""},
 
     {NULL, "archive-verbose", 'a', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", ""},
+
+    {NULL, "show-progress", 0, CLOPT_TYPE_BOOL, NULL, 0, NULL, 0, OPT_CLAMSCAN, "", ""},
+    {NULL, "keep-mbox", 0, CLOPT_TYPE_BOOL, NULL, 0, NULL, 0, OPT_CLAMSCAN, "", ""},
+
+#ifdef _WIN32
+    {NULL, "install", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM, "", ""},
+    {NULL, "uninstall", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM, "", ""},
+    {NULL, "daemon", 'd', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "", ""},
+
+    {NULL, "memory", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", ""},
+    {NULL, "kill", 'k', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", ""},
+    {NULL, "unload", 'u', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", ""},
+#endif
 
     /* cmdline only - deprecated */
     {NULL, "bytecode-trust-all", 't', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", ""},
@@ -641,7 +654,7 @@ const struct clam_option __clam_options[] = {
     {NULL, NULL, 0, 0, NULL, 0, NULL, 0, 0, NULL, NULL}};
 const struct clam_option *clam_options = __clam_options;
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(CLAMWIN)
 void fix_paths(void)
 {
     int have_ddir = 0, have_cdir = 0;
@@ -898,13 +911,13 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
     int i, err = 0, lc = 0, sc = 0, opt_index, line = 0, ret;
     struct optstruct *opts = NULL, *opts_last = NULL, *opt;
     char buffer[512], *buff;
-    struct option longopts[MAXCMDOPTS];
-    char shortopts[MAXCMDOPTS];
+    struct option longopts[MAXCMDOPTS + 1];
+    char shortopts[MAXCMDOPTS + 1];
     regex_t regex;
     long long numarg, lnumarg;
     int regflags = REG_EXTENDED | REG_NOSUB;
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(CLAMWIN)
     if (!is_initialized) {
         fix_paths();
         is_initialized = true;
