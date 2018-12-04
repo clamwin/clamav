@@ -193,6 +193,11 @@ void LLVMInitializePowerPCAsmPrinter();
 #include "clamav-config.h"
 #endif
 
+#ifdef CLAMWIN
+#include <winsock2.h>
+#include <cw_inline.h>
+#endif
+
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
@@ -219,7 +224,7 @@ struct cli_bcengine {
     } guard;
 };
 
-extern "C" uint8_t cli_debug_flag;
+extern "C" BCAPI uint8_t cli_debug_flag;
 #if LLVM_VERSION >= 29
 namespace llvm {
     void initializeRuntimeLimitsPass(PassRegistry&);
@@ -396,12 +401,31 @@ static void rtlib_bzero(void *s, size_t n)
 }
 
 #ifdef _WIN32
-#ifdef _WIN64
-extern "C" void __chkstk(void);
-#else
-extern "C" void _chkstk(void);
+
+#if defined(__MINGW32__)
+#define PROBE_SYM "_alloca"
+#elif defined(_MSC_VER)
+#define PROBE_SYM "_chkstk"
 #endif
+
+#if defined(__MINGW64__)
+#define PROBE_FUN ___chkstk
+#elif defined(__MINGW32__)
+#define PROBE_FUN _alloca
+#elif defined(_MSC_VER) && defined(_WIN64)
+#define PROBE_FUN __chkstk
+#elif defined(_MSC_VER)
+#define PROBE_FUN _chkstk
 #endif
+
+#if !(defined(PROBE_SYM) && defined(PROBE_FUN))
+#error "No stack probe function for this compiler/architecture"
+#endif
+
+extern "C" void * PROBE_FUN;
+
+#endif
+
 // Resolve integer libcalls, but nothing else.
 static void* noUnknownFunctions(const std::string& name) {
     void *addr =
@@ -420,11 +444,7 @@ static void* noUnknownFunctions(const std::string& name) {
 	.Case("memset", (void*)(intptr_t)memset)
 	.Case("abort", (void*)(intptr_t)jit_exception_handler)
 #ifdef _WIN32
-#ifdef _WIN64
-	.Case("_chkstk", (void*)(intptr_t)__chkstk)
-#else
-	.Case("_chkstk", (void*)(intptr_t)_chkstk)
-#endif
+	.Case(PROBE_SYM, (void*)(intptr_t)PROBE_FUN)
 #endif
 	.Default(0);
     if (addr)
