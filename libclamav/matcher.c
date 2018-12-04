@@ -1136,6 +1136,11 @@ cl_error_t cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, str
         if (ctx->scanned)
             *ctx->scanned += bytes / CL_COUNT_PRECISION;
 
+        if (ctx->engine->cb_progress &&
+            map->handle_is_fd &&
+            !ctx->engine->cb_progress((ssize_t) map->handle, bytes, ctx->engine->cb_progress_ctx))
+            return CL_BREAK;
+
         if (troot) {
             virname = NULL;
             ret     = matcher_run(troot, buff, bytes, &virname, &tdata, offset, &info, ftype, ftoffset, acmode, PCRE_SCAN_FMAP, acres, map, bm_offmode ? &toff : NULL, &tpoff, ctx);
