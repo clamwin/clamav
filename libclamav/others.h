@@ -363,6 +363,8 @@ struct cl_engine {
     clcb_pre_cache cb_pre_cache;
     clcb_pre_scan cb_pre_scan;
     clcb_post_scan cb_post_scan;
+    clcb_progress cb_progress;
+    void *cb_progress_ctx;
     clcb_virus_found cb_virus_found;
     clcb_sigload cb_sigload;
     void *cb_sigload_ctx;

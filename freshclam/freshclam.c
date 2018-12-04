@@ -189,6 +189,12 @@ static void help(void)
     printf("    --on-error-execute=COMMAND           Execute COMMAND if errors occurred\n");
     printf("    --on-outdated-execute=COMMAND        Execute COMMAND when software is outdated\n");
     printf("    --update-db=DBNAME                   Only update database DBNAME\n");
+#ifdef CLAMWIN
+    printf("\nWindows Service:\n");
+    printf("    --daemon                             Start in Service mode (internal)\n");
+    printf("    --install                            Install Windows Service\n");
+    printf("    --uninstall                          Uninstall Windows Service\n");
+#endif
     printf("\n");
 }
 
@@ -1597,6 +1603,21 @@ int main(int argc, char **argv)
         goto done;
     }
 
+#ifdef CLAMWIN
+    if (optget(opts, "install")->enabled) {
+        svc_install("FreshClam", "ClamWin Free Antivirus Database Updater",
+            "Updates virus pattern database for ClamWin Free Antivirus application");
+        optfree(opts);
+        return 0;
+    }
+
+    if (optget(opts, "uninstall")->enabled) {
+        svc_uninstall("FreshClam", 1);
+        optfree(opts);
+        return 0;
+    }
+#endif
+
     if (optget(opts, "help")->enabled) {
         help();
         status = FC_SUCCESS;
@@ -1810,7 +1831,9 @@ int main(int argc, char **argv)
     }
 
 #ifdef _WIN32
-    signal(SIGINT, sighandler);
+#ifndef CLAMWIN
+    signal (SIGINT, sighandler);
+#endif
 #else
     memset(&sigact, 0, sizeof(struct sigaction));
     sigact.sa_handler = sighandler;
@@ -1895,6 +1918,11 @@ int main(int argc, char **argv)
             }
             mprintf_disabled = 1;
         }
+#endif
+#ifdef CLAMWIN
+        mprintf_disable(1);
+        svc_register("FreshClam");
+        svc_ready();
 #endif
 
         /* Write PID of daemon process to pidfile. */
@@ -2059,3 +2087,16 @@ done:
 
     return (int)status;
 }
+
+#ifdef CLAMWIN
+BOOL WINAPI cw_stop_ctrl_handler(DWORD CtrlType)
+{
+    if (CtrlType == CTRL_C_EVENT)
+    {
+        SetConsoleCtrlHandler(cw_stop_ctrl_handler, FALSE);
+        fprintf(stderr, "[freshclam] Control+C pressed...\n");
+	    exit(0);
+    }
+    return TRUE;
+}
+#endif
