@@ -61,8 +61,10 @@
 #include <prsht.h>
 #include <shlwapi.h>
 #pragma comment(lib, "Shlwapi.lib")
+#ifndef RARDLL
 #include <PowrProf.h>
 #pragma comment(lib, "PowrProf.lib")
+#endif
 #include <shellapi.h>
 #include <shlobj.h>
 #include <winioctl.h>
