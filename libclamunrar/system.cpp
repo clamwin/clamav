@@ -101,7 +101,7 @@ void Wait()
 
 
 
-#if defined(_WIN_ALL) && !defined(SFX_MODULE)
+#if defined(_WIN_ALL) && !defined(SFX_MODULE) && !defined(RARDLL)
 void Shutdown(POWER_MODE Mode)
 {
   HANDLE hToken;
