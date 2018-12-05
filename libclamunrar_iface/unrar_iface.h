@@ -45,6 +45,11 @@
 #define unrar_skip_file libclamunrar_iface_LTX_unrar_skip_file
 #define unrar_close libclamunrar_iface_LTX_unrar_close
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 typedef enum cl_unrar_error_tag {
     UNRAR_OK = 0,
     UNRAR_BREAK,
@@ -69,5 +74,9 @@ cl_unrar_error_t unrar_peek_file_header(void *hArchive, unrar_metadata_t *file_m
 cl_unrar_error_t unrar_extract_file(void *hArchive, const char *destPath, char *outputBuffer);
 cl_unrar_error_t unrar_skip_file(void *hArchive);
 void unrar_close(void *hArchive);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
