@@ -83,7 +83,9 @@ void RarTime::SetLocal(RarLocalTime *lt)
   if (SystemTimeToFileTime(&st,&lft))
   {
     FILETIME ft;
-
+#if 1
+    LocalFileTimeToFileTime(&lft,&ft);
+#else
     if (WinNT() < WNT_VISTA)
     {
       // TzSpecificLocalTimeToSystemTime based code produces 1 hour error on XP.
@@ -106,7 +108,7 @@ void RarTime::SetLocal(RarLocalTime *lt)
       ft.dwLowDateTime=(DWORD)Corrected;
       ft.dwHighDateTime=(DWORD)(Corrected>>32);
     }
-
+#endif
     SetWinFT(&ft);
   }
   else
