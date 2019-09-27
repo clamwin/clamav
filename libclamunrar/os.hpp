@@ -38,16 +38,13 @@
 #define UNICODE
 #endif
 
-#undef WINVER
-#undef _WIN32_WINNT
-#define WINVER 0x0501
-#define _WIN32_WINNT 0x0501
-
 #if !defined(ZIPSFX)
 #define RAR_SMP
 #endif
 
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 
 #include <windows.h>
 #include <prsht.h>
@@ -77,12 +74,13 @@
 #ifdef _MSC_VER
   #if _MSC_VER<1500
     #define for if (0) ; else for
-  #endif
+  #else
   #include <direct.h>
   #include <intrin.h>
 
   #define USE_SSE
   #define SSE_ALIGNMENT 16
+  #endif
 #else
   #include <dirent.h>
 #endif // _MSC_VER
