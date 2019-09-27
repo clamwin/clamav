@@ -53,8 +53,8 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#endif
 #include <sys/time.h>
+#endif
 #include <assert.h>
 #include <errno.h>
 
@@ -417,7 +417,7 @@ static void cleanup(void)
     for (i = 0; i < global.num_clamd; i++) {
         if (global.conn[i].sd && global.conn[i].sd != -1) {
             send_string_noreconn(&global.conn[i], "nEND\n");
-            close(global.conn[i].sd);
+            closesocket(global.conn[i].sd);
         }
         free(global.conn[i].version);
         free(global.conn[i].remote);
@@ -637,7 +637,7 @@ static int make_connection_real(const char *soname, conn_t *conn)
         print_con_info(conn, "Connecting to: %s\n", soname);
         if (connect(s, (struct sockaddr *)&addr, sizeof(addr))) {
             perror("connect");
-            close(s);
+            closesocket(s);
             return -1;
         }
 
@@ -673,7 +673,7 @@ static int make_connection_real(const char *soname, conn_t *conn)
         print_con_info(conn, "Connecting to: %s\n", soname);
         if (connect(s, p->ai_addr, p->ai_addrlen)) {
             perror("connect");
-            close(s);
+            closesocket(s);
             continue;
         }
 
@@ -754,7 +754,7 @@ static void reconnect(conn_t *conn)
         EXIT_PROGRAM(RECONNECT_FAIL);
     }
     if (conn->sd != -1)
-        close(conn->sd);
+        closesocket(conn->sd);
     if (make_connection(conn->remote, conn) < 0) {
         print_con_info(conn, "Unable to reconnect to %s: %s", conn->remote, strerror(errno));
         EXIT_PROGRAM(RECONNECT_FAIL);
@@ -778,7 +778,7 @@ static int recv_line(conn_t *conn, char *buf, size_t len)
             print_con_info(conn, "%s: %s", conn->remote, strerror(errno));
             /* it could be a timeout, be nice and send an END */
             send_string_noreconn(conn, "nEND\n");
-            close(conn->sd);
+            closesocket(conn->sd);
             conn->sd = -1;
             return 0;
         } else {
@@ -1316,11 +1316,13 @@ static void setup_connections(int argc, char *argv[])
     }
 
 #ifdef _WIN32
+{
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != NO_ERROR) {
         fprintf(stderr, "Error at WSAStartup(): %d\n", WSAGetLastError());
         EXIT_PROGRAM(FAIL_INITIAL_CONN);
     }
+}
 #endif
     /* clamdtop */
     puts("        __                    ____");
