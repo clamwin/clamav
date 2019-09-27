@@ -41,21 +41,13 @@
 #define _UNICODE // Set _T() macro to convert from narrow to wide strings.
 #endif
 
-#if 0
-// 2021.09.05: Allow newer Vista+ APIs like IFileOpenDialog for WinRAR,
-// but still keep SFX modules XP compatible.
-#define WINVER _WIN32_WINNT_VISTA
-#define _WIN32_WINNT _WIN32_WINNT_VISTA
-#else
-#define WINVER _WIN32_WINNT_WINXP
-#define _WIN32_WINNT _WIN32_WINNT_WINXP
-#endif
-
 #if !defined(ZIPSFX)
 #define RAR_SMP
 #endif
 
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 
 #include <windows.h>
 #include <prsht.h>
@@ -83,6 +75,9 @@
   #include <dir.h>
 #endif
 #ifdef _MSC_VER
+  #if _MSC_VER<1500
+    #define for if (0) ; else for
+  #else
   #include <direct.h>
   #include <intrin.h>
 
@@ -90,6 +85,8 @@
   #if defined(_M_IX86) || defined(_M_X64)
     #define USE_SSE
     #define SSE_ALIGNMENT 16
+  #endif
+
   #endif
 #else
   #include <dirent.h>
