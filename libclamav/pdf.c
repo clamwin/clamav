@@ -1429,8 +1429,6 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
         /*
          * Object contains a stream. Parse this now.
          */
-        cli_dbgmsg("pdf_extract_obj: parsing a stream in obj %u %u\n", obj->id >> 8, obj->id & 0xff);
-
         const char *start = pdf->map + obj->start;
 
         size_t length;
@@ -1441,6 +1439,8 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
         struct pdf_dict *dparams     = NULL;
         struct objstm_struct *objstm = NULL;
         int xref                     = 0;
+
+        cli_dbgmsg("pdf_extract_obj: parsing a stream in obj %u %u\n", obj->id >> 8, obj->id & 0xff);
 
         /* Find and interpret the length dictionary value */
         length = find_length(pdf, obj, start, dict_len);
