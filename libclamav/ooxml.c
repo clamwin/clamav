@@ -186,10 +186,10 @@ static int ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx)
     xmlTextReaderPtr reader = NULL;
     uint32_t loff;
 
-    UNUSEDPARAM(filepath);
-
     unsigned long sav_scansize    = ctx->scansize;
     unsigned int sav_scannedfiles = ctx->scannedfiles;
+
+    UNUSEDPARAM(filepath);
 
     cli_dbgmsg("in ooxml_content_cb\n");
 
