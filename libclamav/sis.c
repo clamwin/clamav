@@ -136,8 +136,9 @@ enum {
     {                                                                        \
         /* cli_dbgmsg("GETD2 smax: %d sleft: %d\n", smax, sleft); */         \
         if (sleft < 4) {                                                     \
+            size_t tmp;                                                      \
             memcpy(buff, buff + smax - sleft, sleft);                        \
-            size_t tmp = fmap_readn(map, buff + sleft, pos, BUFSIZ - sleft); \
+            tmp = fmap_readn(map, buff + sleft, pos, BUFSIZ - sleft);        \
             smax       = tmp;                                                \
             if (((size_t) -1) == tmp) {                                                 \
                 cli_dbgmsg("SIS: Read failed during GETD2\n");               \
@@ -162,13 +163,14 @@ enum {
     if (sleft >= (N))                                           \
         sleft -= (N);                                           \
     else {                                                      \
+        size_t tmp;                                             \
         if ((N) < sleft) {                                      \
             cli_dbgmsg("SIS: Refusing to seek back\n");         \
             free(alangs);                                       \
             return CL_CLEAN;                                    \
         }                                                       \
         pos += (N)-sleft;                                       \
-        size_t tmp = fmap_readn(map, buff, pos, BUFSIZ);        \
+        tmp = fmap_readn(map, buff, pos, BUFSIZ);        \
         if (((size_t) -1) == tmp) {                                        \
             cli_dbgmsg("SIS: Read failed during SKIP\n");       \
             free(alangs);                                       \

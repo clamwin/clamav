@@ -206,6 +206,15 @@ static void libclamav_msg_callback_quiet(enum cl_msg severity, const char *fullm
     }
 }
 
+#if defined(WIN32) && !defined(_MSC_VER)
+#include <setjmp.h>
+jmp_buf jmp;
+static void sigsegv_handler(int signum)
+{
+    longjmp(jmp, 1);
+}
+#endif
+
 fc_error_t download_complete_callback(const char *dbFilename, void *context)
 {
     fc_error_t status = FC_EARG;
@@ -234,7 +243,7 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
 
     if (fc_context->bTestDatabases) {
 #ifdef WIN32
-
+#ifdef _MSC_VER
         __try {
             ret = fc_test_database(dbFilename, fc_context->bBytecodeEnabled);
         } __except (logg("!Exception during database testing, code %08x\n",
@@ -242,6 +251,16 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
                     EXCEPTION_CONTINUE_SEARCH) {
             ret = FC_ETESTFAIL;
         }
+#else
+        signal(SIGSEGV, sigsegv_handler);
+        if (setjmp(jmp)) {
+            logg("Exception during database testing\n");
+            ret = FC_ETESTFAIL;
+        }
+        else
+            ret = fc_test_database(dbFilename, fc_context->bBytecodeEnabled);
+        signal(SIGSEGV, SIG_DFL);
+#endif
         if (FC_SUCCESS != ret) {
             logg("^Database load exited with \"%s\" (%d)\n", fc_strerror(ret), ret);
             status = FC_ETESTFAIL;
@@ -875,7 +894,9 @@ static fc_error_t initialize(struct optstruct *opts)
     if (LSTAT(tempDirectory, &statbuf) == -1) {
         if (0 != mkdir(tempDirectory, 0755)) {
             logg("!Can't create temporary directory %s\n", tempDirectory);
+#ifndef _WIN32
             logg("Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
+#endif
             status = FC_EDBDIRACCESS;
             goto done;
         }
@@ -1323,6 +1344,7 @@ static fc_error_t executeIfNewVersion(
          */
         char *after_replace_version = NULL;
         char *version               = newVersion;
+        char *modifiedCommand;
 
         while (*version) {
             if (!strchr("0123456789.", *version)) {
@@ -1332,7 +1354,7 @@ static fc_error_t executeIfNewVersion(
             }
             version++;
         }
-        char *modifiedCommand = (char *)malloc(strlen(command) + strlen(version) + 10);
+        modifiedCommand = (char *)malloc(strlen(command) + strlen(version) + 10);
         if (NULL == modifiedCommand) {
             logg("!executeIfNewVersion: Can't allocate memory for modifiedCommand\n");
             status = FC_EMEM;

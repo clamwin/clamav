@@ -63,10 +63,6 @@
 #include <pthread.h>
 #endif
 
-#if defined(_WIN32) || defined(_WIN64)
-#define strtok_r strtok_s
-#endif
-
 #include "clamav.h"
 #include "others.h"
 #include "str.h"

@@ -157,9 +157,9 @@ static size_t encoding_bytes(const char* fromcode, enum encodings* encoding)
 
 static iconv_t iconv_open(const char* tocode, const char* fromcode)
 {
+    iconv_t iconv = cli_malloc(sizeof(*iconv));
     UNUSEDPARAM(tocode);
 
-    iconv_t iconv = cli_malloc(sizeof(*iconv));
     if (!iconv)
         return NULL;
 
