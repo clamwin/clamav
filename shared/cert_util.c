@@ -20,6 +20,10 @@
  *  MA 02110-1301, USA.
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include <openssl/ssl.h>
 #include <openssl/x509.h>
 #include <openssl/pem.h>
@@ -32,8 +36,7 @@
 
 #include "shared/output.h"
 
-static cert_store_t _cert_store = {
-    .mutex = PTHREAD_MUTEX_INITIALIZER};
+static cert_store_t _cert_store = {PTHREAD_MUTEX_INITIALIZER};
 
 static cl_error_t _x509_to_pem(X509 *cert,
                                char **data,
@@ -664,6 +667,7 @@ CURLcode sslctx_function(CURL *curl, void *ssl_ctx, void *userptr)
 {
     CURLcode status          = CURLE_BAD_FUNCTION_ARGUMENT;
     cert_store_t *cert_store = NULL;
+    X509_STORE *store;
 
     UNUSEDPARAM(curl);
     UNUSEDPARAM(userptr);
@@ -681,7 +685,7 @@ CURLcode sslctx_function(CURL *curl, void *ssl_ctx, void *userptr)
         }
     }
 
-    X509_STORE *store = SSL_CTX_get_cert_store((SSL_CTX *)ssl_ctx);
+    store = SSL_CTX_get_cert_store((SSL_CTX *)ssl_ctx);
 
     cert_store_export_certs(store, NULL);
 
