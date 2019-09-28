@@ -60,7 +60,6 @@
 #endif
 
 #include <stdint.h>
-#include <inttypes.h>
 #include <wchar.h>
 #include <locale.h>
 #include <zlib.h>
