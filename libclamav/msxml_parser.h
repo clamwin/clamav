@@ -31,11 +31,6 @@
 
 #include "others.h"
 
-#ifdef _WIN32
-#ifndef LIBXML_WRITER_ENABLED
-#define LIBXML_WRITER_ENABLED 1
-#endif
-#endif
 #include <libxml/xmlreader.h>
 
 #define MSXML_RECLEVEL_MAX 20

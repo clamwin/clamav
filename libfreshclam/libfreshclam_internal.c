@@ -310,8 +310,9 @@ fc_error_t save_freshclam_dat(void)
             logg("!Can't create freshclam.dat in %s\n", currdir);
         else
             logg("!Can't create freshclam.dat in the current directory\n");
-
+#ifndef _WIN32
         logg("Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
+#endif
         status = FC_EDBDIRACCESS;
         goto done;
     }
@@ -740,12 +741,13 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
 {
     size_t real_size                  = size * nmemb;
     struct MemoryStruct *receivedData = (struct MemoryStruct *)userp;
+    char *newBuffer;
 
     if ((NULL == contents) || (NULL == userp)) {
         return 0;
     }
 
-    char *newBuffer = realloc(receivedData->buffer, receivedData->size + real_size + 1);
+    newBuffer = realloc(receivedData->buffer, receivedData->size + real_size + 1);
     if (NULL == newBuffer) {
         logg("!remote_cvdhead - recv callback: Failed to allocate memory CVD header data.\n");
         return 0;
@@ -1241,8 +1243,9 @@ static fc_error_t downloadFile(
             logg("!downloadFile: Can't create new file %s in %s\n", destfile, currdir);
         else
             logg("!downloadFile: Can't create new file %s in the current directory\n", destfile);
-
+#ifndef _WIN32
         logg("Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
+#endif
         status = FC_EDBDIRACCESS;
         goto done;
     }
