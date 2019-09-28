@@ -2763,6 +2763,9 @@ int cli_scanpe(cli_ctx *ctx)
     int toval                   = 0;
     struct json_object *pe_json = NULL;
 #endif
+    struct cli_exe_info _peinfo;
+    struct cli_exe_info *peinfo = &_peinfo;
+    uint32_t opts = CLI_PEHEADER_OPT_DBG_PRINT_INFO | CLI_PEHEADER_OPT_REMOVE_MISSING_SECTIONS;
 
     if (!ctx) {
         cli_errmsg("cli_scanpe: ctx == NULL\n");
@@ -2780,11 +2783,6 @@ int cli_scanpe(cli_ctx *ctx)
 #endif
     map   = *ctx->fmap;
     fsize = map->len;
-
-    struct cli_exe_info _peinfo;
-    struct cli_exe_info *peinfo = &_peinfo;
-
-    uint32_t opts = CLI_PEHEADER_OPT_DBG_PRINT_INFO | CLI_PEHEADER_OPT_REMOVE_MISSING_SECTIONS;
 
 #if HAVE_JSON
     if (SCAN_COLLECT_METADATA) {
