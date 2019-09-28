@@ -223,6 +223,15 @@ static void libclamav_msg_callback_quiet(enum cl_msg severity, const char *fullm
     }
 }
 
+#if defined(WIN32) && !defined(_MSC_VER)
+#include <setjmp.h>
+jmp_buf jmp;
+static void sigsegv_handler(int signum)
+{
+    longjmp(jmp, 1);
+}
+#endif
+
 fc_error_t download_complete_callback(const char *dbFilename, void *context)
 {
     fc_error_t status = FC_EARG;
@@ -251,6 +260,7 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
 
     if (fc_context->bTestDatabases) {
 #ifdef _WIN32
+#ifdef _MSC_VER
 
         __try {
             ret = fc_test_database(dbFilename, fc_context->bBytecodeEnabled);
@@ -259,6 +269,16 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
                     EXCEPTION_CONTINUE_SEARCH) {
             ret = FC_ETESTFAIL;
         }
+#else
+        signal(SIGSEGV, sigsegv_handler);
+        if (setjmp(jmp)) {
+            logg("Exception during database testing\n");
+            ret = FC_ETESTFAIL;
+        }
+        else
+            ret = fc_test_database(dbFilename, fc_context->bBytecodeEnabled);
+        signal(SIGSEGV, SIG_DFL);
+#endif
         if (FC_SUCCESS != ret) {
             logg("^Database load exited with \"%s\" (%d)\n", fc_strerror(ret), ret);
             status = FC_ETESTFAIL;
@@ -1310,6 +1330,7 @@ static fc_error_t executeIfNewVersion(
          */
         char *after_replace_version = NULL;
         char *version               = newVersion;
+        char *modifiedCommand;
 
         while (*version) {
             if (!strchr("0123456789.", *version)) {
@@ -1432,7 +1453,9 @@ fc_error_t perform_database_update(
     if (LSTAT(g_freshclamTempDirectory, &statbuf) == -1) {
         if (0 != mkdir(g_freshclamTempDirectory, 0755)) {
             logg("!Can't create temporary directory %s\n", g_freshclamTempDirectory);
+#ifndef _WIN32
             logg("Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
+#endif
             status = FC_EDBDIRACCESS;
             goto done;
         }

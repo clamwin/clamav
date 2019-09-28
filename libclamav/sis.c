@@ -136,8 +136,9 @@ enum {
     {                                                                        \
         /* cli_dbgmsg("GETD2 smax: %d sleft: %d\n", smax, sleft); */         \
         if (sleft < 4) {                                                     \
+            size_t tmp;                                                      \
             memcpy(buff, buff + smax - sleft, sleft);                        \
-            size_t tmp = fmap_readn(map, buff + sleft, pos, BUFSIZ - sleft); \
+            tmp = fmap_readn(map, buff + sleft, pos, BUFSIZ - sleft);        \
             smax       = tmp;                                                \
             if (((size_t)-1) == tmp) {                                       \
                 cli_dbgmsg("SIS: Read failed during GETD2\n");               \

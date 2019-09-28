@@ -4487,12 +4487,13 @@ cl_error_t cli_magic_scan_desc_type(int desc, const char *filepath, cli_ctx *ctx
 {
     STATBUF sb;
     cl_error_t status = CL_CLEAN;
+    const char *parent_filepath;
 
     if (!ctx) {
         return CL_EARG;
     }
 
-    const char *parent_filepath = ctx->sub_filepath;
+    parent_filepath = ctx->sub_filepath;
     ctx->sub_filepath           = filepath;
 
 #ifdef HAVE__INTERNAL__SHA_COLLECT
