@@ -18,7 +18,7 @@
 #ifndef TFM_H_
 #define TFM_H_
 
-#if !defined(__GNUC__) || !defined(__x86_64__)
+#if !defined(__GNUC__) || !defined(__x86_64__) || defined(__MINGW64__)
 /* on i686 we run out of registers with -fPIC, and on ia64 we miscompile.
  * Just enable this on x86-64 where we know it works */
 #define TFM_NO_ASM
