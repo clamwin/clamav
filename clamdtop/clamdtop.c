@@ -127,7 +127,7 @@ static void exit_program(enum exit_reason reason, const char *func, unsigned lin
     } while (0)
 
 static struct global_stats global;
-static int curses_inited   = 1;
+static int curses_inited   = 0;
 static int maxystats       = 0;
 static int detail_selected = -1;
 
