@@ -187,7 +187,7 @@ static int xferinfo(void *prog,
     TIMETYPE remtime               = 0;
 
     uint32_t i                = 0;
-    uint32_t totalNumDots     = 30;
+    uint32_t totalNumDots     = 28;
     uint32_t numDots          = 0;
     double fractiondownloaded = 0.0;
 
