@@ -26,7 +26,7 @@
 #include "clamav-config.h"
 #endif
 
-#include <Windows.h>
+#include <windows.h>
 
 #ifndef PATH_MAX
 #define PATH_MAX 1024

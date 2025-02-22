@@ -15,7 +15,7 @@ add_rust_library(TARGET clamav_rust
     PRECOMPILE_TESTS FALSE
 )
 if (WIN32)
-    target_link_libraries(clamav_rust PUBLIC INTERFACE Userenv)
+    target_link_libraries(clamav_rust PUBLIC INTERFACE userenv)
 endif()
 
 if(WIN32)
