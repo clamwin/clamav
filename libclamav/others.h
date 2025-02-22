@@ -885,7 +885,7 @@ void cli_logg_unsetup(void);
 #endif
 
 #ifdef __GNUC__
-inline void cli_dbgmsg(const char *str, ...) __attribute__((format(printf, 1, 2)));
+void cli_dbgmsg(const char *str, ...) __attribute__((format(printf, 1, 2)));
 #else
 inline void cli_dbgmsg(const char *str, ...);
 #endif
