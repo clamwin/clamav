@@ -23,7 +23,7 @@
 #include "clamav-config.h"
 #endif
 
-#include <Windows.h>
+#include <windows.h>
 #include <string.h>
 
 #include "utf8_util.h"

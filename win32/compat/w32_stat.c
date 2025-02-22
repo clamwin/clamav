@@ -25,8 +25,8 @@
 #include <fcntl.h>
 #include <io.h>
 
-#include <Windows.h>
-#include <WinNls.h>
+#include <windows.h>
+#include <winnls.h>
 
 #include "clamav-types.h"
 

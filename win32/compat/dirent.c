@@ -21,7 +21,7 @@
 
 #include <errno.h>
 
-#include <Windows.h>
+#include <windows.h>
 // #include "clamav.h"
 // #include "others.h"
 #include "dirent.h"

@@ -31,7 +31,7 @@
 #include "actions.h"
 #include "output.h"
 #include "clamdcom.h"
-#include "exescanner.h"
+#include "exeScanner.h"
 #include "scanmem.h"
 
 typedef int (*proc_callback)(PROCESSENTRY32 ProcStruct, MODULEENTRY32 me32, void *data, struct mem_info *info);

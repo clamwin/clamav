@@ -21,10 +21,10 @@
 
 #include <stdio.h>
 #include <winsock2.h>
-#include <Ws2tcpip.h>
+#include <ws2tcpip.h>
 /* #define W2K_DNSAAPI_COMPAT */
 #ifdef W2K_DNSAAPI_COMPAT
-#include <Wspiapi.h>
+#include <wspiapi.h>
 #endif
 #include <stdlib.h>
 #include "net.h"
