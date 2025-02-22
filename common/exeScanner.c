@@ -19,7 +19,7 @@
  *  MA 02110-1301, USA.
  */
 
-#include "exescanner.h"
+#include "exeScanner.h"
 
 /* -1 = wildchar - -2 = stop here */
 sigs_t signatures[] = {
