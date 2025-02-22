@@ -273,11 +273,7 @@ function(add_rust_library)
     set(oneValueArgs TARGET SOURCE_DIRECTORY BINARY_DIRECTORY PRECOMPILE_TESTS INCLUDE_DIRECTORIES)
     cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-    if(WIN32)
-        set(OUTPUT "${ARGS_BINARY_DIRECTORY}/${RUST_COMPILER_TARGET}/${CARGO_BUILD_TYPE}/${ARGS_TARGET}.lib")
-    else()
-        set(OUTPUT "${ARGS_BINARY_DIRECTORY}/${RUST_COMPILER_TARGET}/${CARGO_BUILD_TYPE}/lib${ARGS_TARGET}.a")
-    endif()
+    set(OUTPUT "${ARGS_BINARY_DIRECTORY}/${RUST_COMPILER_TARGET}/${CARGO_BUILD_TYPE}/${CMAKE_STATIC_LIBRARY_PREFIX}${ARGS_TARGET}${CMAKE_STATIC_LIBRARY_SUFFIX}")
 
     file(GLOB_RECURSE LIB_SOURCES "${ARGS_SOURCE_DIRECTORY}/*.rs")
 
@@ -402,7 +398,32 @@ if(RUSTC_MINIMUM_REQUIRED AND rustc_VERSION VERSION_LESS RUSTC_MINIMUM_REQUIRED)
     ${rustc_VERSION} < ${RUSTC_MINIMUM_REQUIRED}")
 endif()
 
-if(WIN32)
+if(NOT RUST_COMPILER_TARGET)
+    # Automatically determine the Rust Target Triple.
+    # Note: Users may override automatic target detection by specifying their own. Most likely needed for cross-compiling.
+    # For reference determining target platform: https://doc.rust-lang.org/nightly/rustc/platform-support.html
+    if(WIN32)
+        # For windows x86/x64, it's easy enough to guess the target.
+        if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+            set(RUST_COMPILER_TARGET "x86_64-pc-windows-msvc")
+        else()
+            set(RUST_COMPILER_TARGET "i686-pc-windows-msvc")
+        endif()
+    elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin AND "${CMAKE_OSX_ARCHITECTURES}" MATCHES "^(arm64;x86_64|x86_64;arm64)$")
+        # Special case for Darwin because we may want to build universal binaries.
+        set(RUST_COMPILER_TARGET "universal-apple-darwin")
+    else()
+        # Determine default LLVM target triple.
+        execute_process(COMMAND ${rustc_EXECUTABLE} -vV
+            OUTPUT_VARIABLE RUSTC_VV_OUT ERROR_QUIET)
+        string(REGEX REPLACE "^.*host: ([a-zA-Z0-9_\\-]+).*" "\\1" DEFAULT_RUST_COMPILER_TARGET1 "${RUSTC_VV_OUT}")
+        string(STRIP ${DEFAULT_RUST_COMPILER_TARGET1} DEFAULT_RUST_COMPILER_TARGET)
+
+        set(RUST_COMPILER_TARGET "${DEFAULT_RUST_COMPILER_TARGET}")
+    endif()
+endif()
+
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
     file(TOUCH ${CMAKE_BINARY_DIR}/empty-file)
     set(EMPTY_FILE "${CMAKE_BINARY_DIR}/empty-file")
 else()
@@ -412,7 +433,7 @@ endif()
 # Determine the native libs required to link w/ rust static libs
 # message(STATUS "Detecting native static libs for rust: ${rustc_EXECUTABLE} --crate-type staticlib --print=native-static-libs ${EMPTY_FILE}")
 execute_process(
-    COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_BINARY_DIR}" ${rustc_EXECUTABLE} --crate-type staticlib --print=native-static-libs ${EMPTY_FILE}
+    COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_BINARY_DIR}" ${rustc_EXECUTABLE} --target=${RUST_COMPILER_TARGET} --crate-type staticlib --print=native-static-libs ${EMPTY_FILE}
     OUTPUT_VARIABLE RUST_NATIVE_STATIC_LIBS_OUTPUT
     ERROR_VARIABLE RUST_NATIVE_STATIC_LIBS_ERROR
     RESULT_VARIABLE RUST_NATIVE_STATIC_LIBS_RESULT
@@ -439,31 +460,6 @@ foreach(LINE ${LINE_LIST})
         break()
     endif()
 endforeach()
-
-if(NOT RUST_COMPILER_TARGET)
-    # Automatically determine the Rust Target Triple.
-    # Note: Users may override automatic target detection by specifying their own. Most likely needed for cross-compiling.
-    # For reference determining target platform: https://doc.rust-lang.org/nightly/rustc/platform-support.html
-    if(WIN32)
-        # For windows x86/x64, it's easy enough to guess the target.
-        if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-            set(RUST_COMPILER_TARGET "x86_64-pc-windows-msvc")
-        else()
-            set(RUST_COMPILER_TARGET "i686-pc-windows-msvc")
-        endif()
-    elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin AND "${CMAKE_OSX_ARCHITECTURES}" MATCHES "^(arm64;x86_64|x86_64;arm64)$")
-        # Special case for Darwin because we may want to build universal binaries.
-        set(RUST_COMPILER_TARGET "universal-apple-darwin")
-    else()
-        # Determine default LLVM target triple.
-        execute_process(COMMAND ${rustc_EXECUTABLE} -vV
-            OUTPUT_VARIABLE RUSTC_VV_OUT ERROR_QUIET)
-        string(REGEX REPLACE "^.*host: ([a-zA-Z0-9_\\-]+).*" "\\1" DEFAULT_RUST_COMPILER_TARGET1 "${RUSTC_VV_OUT}")
-        string(STRIP ${DEFAULT_RUST_COMPILER_TARGET1} DEFAULT_RUST_COMPILER_TARGET)
-
-        set(RUST_COMPILER_TARGET "${DEFAULT_RUST_COMPILER_TARGET}")
-    endif()
-endif()
 
 set(CARGO_ARGS "build")
 
