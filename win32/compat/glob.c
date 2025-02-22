@@ -24,7 +24,7 @@
 
 #include <stdio.h>
 #include <malloc.h>
-#include <WinNls.h>
+#include <winnls.h>
 
 /*
     I GIVE UP! The CRT is b0rked and cannot be helped.
