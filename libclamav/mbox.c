@@ -63,7 +63,7 @@
 #include <pthread.h>
 #endif
 
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_MSC_VER)
 #define strtok_r strtok_s
 #endif
 
