@@ -27,6 +27,7 @@
 #include <wspiapi.h>
 #endif
 #include <stdlib.h>
+#include "platform.h"
 #include "net.h"
 #include "w32_errno.h"
 
