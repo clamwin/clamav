@@ -24,6 +24,7 @@
 
 #include <sys/stat.h>
 
+#ifdef _MSC_VER
 #define S_IRUSR S_IREAD
 #define S_IWUSR S_IWRITE
 #define S_IRWXU (S_IRUSR | S_IWUSR)
@@ -34,6 +35,7 @@
 #define W_OK 2
 #define R_OK 4
 #define X_OK R_OK
+#endif
 
 int w32_stat(const char *path, struct stat *buf);
 

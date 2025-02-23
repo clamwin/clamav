@@ -32,8 +32,6 @@
 
 #define TIMEOUT_MODULE 30000
 
-int scanmem(struct mem_info *info);
-
 /* cache helpers */
 typedef struct _filelist_t {
     char filename[MAX_PATH];
@@ -69,4 +67,5 @@ struct mem_info {
     struct cl_scan_options *options;
 };
 
+int scanmem(struct mem_info *info);
 #endif
