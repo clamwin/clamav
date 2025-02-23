@@ -255,6 +255,15 @@ static void libclamav_msg_callback_quiet(enum cl_msg severity, const char *fullm
     }
 }
 
+#if defined(WIN32) && !defined(_MSC_VER)
+#include <setjmp.h>
+jmp_buf jmp;
+static void sigsegv_handler(int signum)
+{
+    longjmp(jmp, 1);
+}
+#endif
+
 fc_error_t download_complete_callback(const char *dbFilename, void *context)
 {
     fc_error_t status = FC_EARG;
@@ -283,7 +292,7 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
 
     if (fc_context->bTestDatabases) {
 #ifdef _WIN32
-
+#ifdef _MSC_VER
         __try {
             ret = fc_test_database(dbFilename, fc_context->bBytecodeEnabled);
         } __except (logg(LOGG_ERROR, "Exception during database testing, code %08x\n",
@@ -291,6 +300,16 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
                     EXCEPTION_CONTINUE_SEARCH) {
             ret = FC_ETESTFAIL;
         }
+#else
+        signal(SIGSEGV, sigsegv_handler);
+        if (setjmp(jmp)) {
+            logg(LOGG_ERROR, "Exception during database testing\n");
+            ret = FC_ETESTFAIL;
+        }
+        else
+            ret = fc_test_database(dbFilename, fc_context->bBytecodeEnabled);
+        signal(SIGSEGV, SIG_DFL);
+#endif
         if (FC_SUCCESS != ret) {
             logg(LOGG_WARNING, "Database load exited with \"%s\"\n", fc_strerror(ret));
             status = FC_ETESTFAIL;
