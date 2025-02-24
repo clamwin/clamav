@@ -36,7 +36,7 @@
 
 typedef int (*proc_callback)(PROCESSENTRY32 ProcStruct, MODULEENTRY32 me32, void *data, struct mem_info *info);
 int sock;
-struct optstruct *clamdopts;
+static struct optstruct *clamdopts;
 
 static inline int lookup_cache(filelist_t **list, const char *filename)
 {
