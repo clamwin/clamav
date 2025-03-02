@@ -20,6 +20,7 @@
  *  MA 02110-1301, USA.
  */
 
+use std::mem::ManuallyDrop;
 use std::{ffi::CStr, fs::File};
 
 use log::{debug, error};
@@ -35,11 +36,11 @@ extern "C" {
 /// On Unix-like platforms, this is done with File::from_raw_fd().
 /// On Windows, this is done through the `libc` crate's `get_osfhandle()` function.
 /// All other platforms will panic!()
-pub fn file_from_fd_or_handle(fd: i32) -> File {
+pub fn file_from_fd_or_handle(fd: i32) -> ManuallyDrop<File> {
     #[cfg(unix)]
     {
         use std::os::unix::io::FromRawFd;
-        unsafe { File::from_raw_fd(fd) }
+        unsafe { ManuallyDrop::new(File::from_raw_fd(fd)) }
     }
 
     #[cfg(windows)]
@@ -47,7 +48,7 @@ pub fn file_from_fd_or_handle(fd: i32) -> File {
         use std::os::windows::io::{FromRawHandle, RawHandle};
         unsafe {
             let handle = libc::get_osfhandle(fd);
-            File::from_raw_handle(handle as RawHandle)
+            ManuallyDrop::new(File::from_raw_handle(handle as RawHandle))
         }
     }
 
