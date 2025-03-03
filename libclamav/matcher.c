@@ -1291,6 +1291,11 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, bool filetype_only, str
         if (ctx->scanned)
             *ctx->scanned += bytes / CL_COUNT_PRECISION;
 
+        if (ctx->engine->cb_engine_scan_progress &&
+            ctx->fmap->handle_is_fd &&
+            !ctx->engine->cb_engine_scan_progress((size_t) ctx->fmap->handle, bytes, ctx->engine->cb_engine_scan_progress_ctx))
+            return CL_BREAK;
+
         if (target_ac_root) {
             const char *virname = NULL;
 
