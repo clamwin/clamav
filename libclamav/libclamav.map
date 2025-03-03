@@ -65,6 +65,7 @@ CLAMAV_0.104.0 {
     cl_engine_set_clcb_engine_compile_progress;
     cl_engine_set_clcb_engine_free_progress;
     cl_engine_set_clcb_sigload_progress;
+    cl_engine_set_clcb_scan_progress;
 } CLAMAV_PUBLIC;
 CLAMAV_1.0.0 {
   global:

@@ -987,6 +987,8 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
     settings->cb_engine_compile_progress_ctx = engine->cb_engine_compile_progress_ctx;
     settings->cb_engine_free_progress        = engine->cb_engine_free_progress;
     settings->cb_engine_free_progress_ctx    = engine->cb_engine_free_progress_ctx;
+    settings->cb_engine_scan_progress        = engine->cb_engine_scan_progress;
+    settings->cb_engine_scan_progress_ctx    = engine->cb_engine_scan_progress_ctx;
     settings->cb_hash                        = engine->cb_hash;
     settings->cb_meta                        = engine->cb_meta;
     settings->cb_file_props                  = engine->cb_file_props;
@@ -1070,6 +1072,8 @@ cl_error_t cl_engine_settings_apply(struct cl_engine *engine, const struct cl_se
     engine->cb_engine_compile_progress_ctx = settings->cb_engine_compile_progress_ctx;
     engine->cb_engine_free_progress        = settings->cb_engine_free_progress;
     engine->cb_engine_free_progress_ctx    = settings->cb_engine_free_progress_ctx;
+    engine->cb_engine_scan_progress        = settings->cb_engine_scan_progress;
+    engine->cb_engine_scan_progress_ctx    = settings->cb_engine_scan_progress_ctx;
     engine->cb_hash                        = settings->cb_hash;
     engine->cb_meta                        = settings->cb_meta;
     engine->cb_file_props                  = settings->cb_file_props;
@@ -1922,6 +1926,12 @@ void cl_engine_set_clcb_engine_free_progress(struct cl_engine *engine, clcb_prog
 {
     engine->cb_engine_free_progress     = callback;
     engine->cb_engine_free_progress_ctx = callback ? context : NULL;
+}
+
+void cl_engine_set_clcb_scan_progress(struct cl_engine *engine, clcb_progress callback, void *context)
+{
+    engine->cb_engine_scan_progress     = callback;
+    engine->cb_engine_scan_progress_ctx = callback ? context : NULL;
 }
 
 void cl_engine_set_clcb_hash(struct cl_engine *engine, clcb_hash callback)

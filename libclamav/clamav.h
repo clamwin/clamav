@@ -713,6 +713,14 @@ extern void cl_engine_set_clcb_engine_compile_progress(struct cl_engine *engine,
 extern void cl_engine_set_clcb_engine_free_progress(struct cl_engine *engine, clcb_progress callback, void *context);
 
 /**
+ * @brief Set a custom progress-scan callback function.
+ *
+ * @param engine    The initialized scanning engine.
+ * @param callback  The callback function pointer.
+ */
+extern void cl_engine_set_clcb_scan_progress(struct cl_engine *engine, clcb_progress callback, void *context);
+
+/**
  * @brief Logging message callback for info, warning, and error messages.
  *
  * The specified callback will be called instead of logging to stderr.
