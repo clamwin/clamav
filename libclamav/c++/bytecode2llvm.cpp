@@ -126,9 +126,6 @@ void LLVMInitializePowerPCAsmPrinter();
 #error "libstdc++ parallel mode is not supported for ClamAV. Please remove -D_GLIBCXX_PARALLEL from CXXFLAGS!"
 #endif
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/Utils.h"
 #include "llvm/LinkAllPasses.h"
@@ -136,6 +133,9 @@ void LLVMInitializePowerPCAsmPrinter();
 #include "llvm-c/Core.h"
 
 #include "llvm/InitializePasses.h"
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 
 #ifdef HAVE_CONFIG_H
 #undef PACKAGE_BUGREPORT
