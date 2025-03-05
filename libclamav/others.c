@@ -114,6 +114,8 @@ static void *load_module(const char *name, const char *featurename)
 
     snprintf(modulename, sizeof(modulename), "%s%s", name, LT_MODULE_EXT);
 
+    UINT olderr = SetErrorMode(SEM_FAILCRITICALERRORS);
+
     rhandle = LoadLibraryA(modulename);
     if (NULL == rhandle) {
         char *err = NULL;
@@ -143,7 +145,7 @@ static void *load_module(const char *name, const char *featurename)
     cli_dbgmsg("%s support loaded from %s\n", featurename, modulename);
 
 done:
-
+    SetErrorMode(olderr);
     return (void *)rhandle;
 }
 
