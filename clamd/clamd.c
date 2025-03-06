@@ -193,6 +193,7 @@ int main(int argc, char **argv)
             perror("setrlimit");
 #endif
         debug_mode = 1;
+        cl_debug();
     }
 
     /* check foreground option from command line to override config file */
