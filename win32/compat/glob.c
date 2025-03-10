@@ -135,7 +135,7 @@ static int glob_add(char *path, int *argc, char ***argv)
         tailwldsep = tail + taillen;
 
     baselen = strlen(path) + 1;
-    dup1    = (char *)_alloca(baselen * 2);
+    dup1    = (char *)_malloca(baselen * 2);
     memcpy(dup1, path, baselen);
     dup2 = dup1 + baselen;
     memcpy(dup2, path, baselen);
