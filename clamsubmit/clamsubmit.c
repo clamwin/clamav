@@ -669,7 +669,9 @@ char *read_stream(void)
         free(filename);
         return NULL;
     }
-
+#ifdef _WIN32
+    _setmode(_fileno(stdin), _O_BINARY);
+#endif
     while (!feof(stdin)) {
         nwritten = 0;
         nread    = fread(buf, 1, sizeof(buf), stdin);
