@@ -781,6 +781,10 @@ static int scanstdin(const struct cl_engine *engine, const struct optstruct *opt
         return 2;
     }
 
+#ifdef _WIN32
+    _setmode(_fileno(stdin), _O_BINARY);
+#endif
+
     while ((bread = fread(buff, 1, FILEBUFF, stdin))) {
         fsize += bread;
         if (fwrite(buff, 1, bread, fs) < bread) {

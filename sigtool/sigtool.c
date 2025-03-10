@@ -325,6 +325,9 @@ static int hashsig(const struct optstruct *opts, unsigned int class, cli_hash_ty
             mprintf(LOGG_ERROR, "hashsig: Can't generate requested hash for input stream\n");
             return -1;
         }
+#ifdef _WIN32
+        _setmode(_fileno(stdin), _O_BINARY);
+#endif
         hash = cli_hashstream(stdin, NULL, type);
         if (!hash) {
             mprintf(LOGG_ERROR, "hashsig: Can't generate hash for input stream\n");
