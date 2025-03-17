@@ -1590,9 +1590,11 @@ cl_error_t cli_realpath(const char *file_name, char **real_filename)
         cli_warnmsg("cli_realpath: Invalid arguments.\n");
         goto done;
     }
-
 #ifdef _WIN32
-
+#if defined(_WIN32_WINNT) && _WIN32_WINNT <= _WIN32_WINNT_WINXP
+    *real_filename = strdup(file_name);
+    return *real_filename ? CL_SUCCESS : CL_EMEM;
+#endif
     wpath = uncpath(file_name);
     if (!wpath) {
         errno = ENOMEM;
