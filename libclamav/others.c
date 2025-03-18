@@ -1668,8 +1668,7 @@ int cli_rmdirs(const char *dirname)
     char err[128];
 
     if (CLAMSTAT(dirname, &statb) < 0) {
-        cli_warnmsg("cli_rmdirs: Can't locate %s: %s\n", dirname, cli_strerror(errno, err, sizeof(err)));
-        return -1;
+        return 0;
     }
 
     if (!S_ISDIR(statb.st_mode)) {
