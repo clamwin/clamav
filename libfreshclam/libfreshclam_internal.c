@@ -743,6 +743,38 @@ static fc_error_t create_curl_handle(
     if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_SSL_CTX_FUNCTION, *sslctx_function)) {
         logg(LOGG_DEBUG, "create_curl_handle: Failed to set SSL CTX function. Your libcurl may use an SSL backend that does not support CURLOPT_SSL_CTX_FUNCTION.\n");
     }
+#if defined(_WIN32_WINNT) && _WIN32_WINNT <= _WIN32_WINNT_WINXP
+    do {
+        const char cabundle[] = "curl-ca-bundle.crt";
+        char filebuffer[MAX_PATH];
+
+        DWORD len = GetModuleFileNameA(0, filebuffer, MAX_PATH - 1);
+        if ((len == 0) || (len > MAX_PATH - 1))
+            break;
+
+        char *lastdirchar = strrchr(filebuffer, '\\');
+        if (!lastdirchar)
+            break;
+
+        lastdirchar++;
+        *lastdirchar = 0;
+
+        size_t remaining = sizeof(filebuffer) - strlen(filebuffer);
+        if (strlen(cabundle) > remaining - 1)
+            break;
+
+        strncat(filebuffer, cabundle, remaining);
+
+        struct stat statbuf;
+        if ((stat(filebuffer, &statbuf) == -1) || !S_ISREG(statbuf.st_mode))
+            break;
+
+        logg(LOGG_DEBUG, "create_curl_handle: adding CA bundle %s\n", filebuffer);
+
+        if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_CAINFO, filebuffer) != CURLE_OK)
+            logg(LOGG_ERROR, "create_curl_handle: Failed to set CURLOPT_CAINFO)!\n");
+    } while (0);
+#endif
 #else
     /* Use an alternate CA bundle, if specified by the CURL_CA_BUNDLE environment variable. */
     set_tls_ca_bundle(curl);
