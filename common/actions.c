@@ -576,7 +576,7 @@ static int traverse_unlink(const char *target)
         goto done;
     }
 #else
-    fileInfo.DeleteFileA = TRUE;
+    fileInfo.DeleteFile = TRUE;
     if (FALSE == SetFileInformationByHandle(
                      target_file_handle,               // FileHandle
                      FileDispositionInfo,              // FileInformationClass
