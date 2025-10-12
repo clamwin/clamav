@@ -406,6 +406,8 @@ struct cl_engine {
     void *cb_engine_compile_progress_ctx;
     clcb_progress cb_engine_free_progress;
     void *cb_engine_free_progress_ctx;
+    clcb_progress cb_engine_scan_progress;
+    void *cb_engine_scan_progress_ctx;
 
     /* Used for bytecode */
     struct cli_all_bc bcs;
@@ -493,6 +495,8 @@ struct cl_settings {
     void *cb_engine_compile_progress_ctx;
     clcb_progress cb_engine_free_progress;
     void *cb_engine_free_progress_ctx;
+    clcb_progress cb_engine_scan_progress;
+    void *cb_engine_scan_progress_ctx;
 
     /* Engine max settings */
     uint64_t maxembeddedpe;      /* max size to scan MSEXE for PE */

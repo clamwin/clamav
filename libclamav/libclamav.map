@@ -62,6 +62,7 @@ CLAMAV_PUBLIC {
     cl_engine_set_clcb_engine_compile_progress;
     cl_engine_set_clcb_engine_free_progress;
     cl_engine_set_clcb_sigload_progress;
+    cl_engine_set_clcb_scan_progress;
     cl_cvdunpack;
     cl_engine_set_clcb_file_inspection;
     cl_cvdgetage;

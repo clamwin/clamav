@@ -266,6 +266,7 @@ void help(void)
     mprintf(LOGG_INFO, "    --infected            -i             Only print infected files.\n");
     mprintf(LOGG_INFO, "    --suppress-ok-results -o             Skip printing OK files.\n");
     mprintf(LOGG_INFO, "    --bell                               Sound bell on virus detection.\n");
+    mprintf(LOGG_INFO, "    --show-progress                      Print progress indicator for each file\n");
     mprintf(LOGG_INFO, "\n");
     mprintf(LOGG_INFO, "    --tempdir=DIRECTORY                  Create temporary files in DIRECTORY.\n");
     mprintf(LOGG_INFO, "    --leave-temps[=yes/no(*)]            Do not remove temporary files.\n");
