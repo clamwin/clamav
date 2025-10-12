@@ -26,7 +26,7 @@
 #include "clamav-config.h"
 #endif
 
-#include <Windns.h>
+#include <windns.h>
 #include "clamav-types.h"
 
 #define C_IN 1

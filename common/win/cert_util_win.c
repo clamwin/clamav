@@ -20,7 +20,7 @@
  *  MA 02110-1301, USA.
  */
 
-#include <Windows.h>
+#include <windows.h>
 #include <wincrypt.h>
 
 #include <openssl/x509.h>
