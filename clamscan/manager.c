@@ -71,6 +71,86 @@
 #include "scanmem.h"
 #endif
 
+#ifdef _WIN32
+static HANDLE console;
+
+/* workaround to garbled line output when doing CR */
+static inline void clear_console_line()
+{
+    DWORD w;
+    COORD coord;
+    CONSOLE_SCREEN_BUFFER_INFO info;
+
+    if (GetConsoleScreenBufferInfo(console, &info))
+    {
+        coord.X = info.dwCursorPosition.X;
+        coord.Y = info.dwCursorPosition.Y;
+        FillConsoleOutputCharacter(console, ' ', info.dwSize.X - coord.X, coord, &w);
+        coord.X = 0;
+        SetConsoleCursorPosition(console, coord);
+    }
+}
+
+#define do_line(fmt, ...) do {                      \
+    if (console) {                                  \
+        mprintf(LOGG_INFO, fmt, __VA_ARGS__);       \
+        clear_console_line();                       \
+    }                                               \
+    else mprintf(LOGG_INFO, fmt "\r", __VA_ARGS__); \
+} while (0)
+
+#define do_rotate(ctx, fmt) do {                    \
+    if (console) {                                  \
+        rotate(ctx, fmt);                           \
+        clear_console_line();                       \
+    }                                               \
+    else rotate(ctx, fmt "\r");                     \
+} while (0)
+#else /* _WIN32 */
+#define do_line(fmt, ...) mprintf(LOGG_INFO, fmt "\r", __VA_ARGS__)
+#define do_rotate(ctx, fmt) rotate(ctx, fmt "\r")
+#endif
+
+/* scan progress callback */
+struct progress_cb_data {
+    const char *filename;
+    size_t size, count;
+    int oldvalue;
+    int fd;
+};
+
+static struct progress_cb_data scan_progress_ctx;
+static const char *rotation = "|/-\\";
+
+static void rotate(struct progress_cb_data *cbctx, const char *fmt)
+{
+    if ((cbctx->count++ % 100000) == 0)
+    {
+        mprintf(LOGG_INFO, fmt, cbctx->filename, rotation[cbctx->oldvalue]);
+        cbctx->oldvalue = (cbctx->oldvalue + 1) % 4;
+    }
+}
+
+static cl_error_t scan_progress_cb(size_t handle, size_t now_completed, void *context)
+{
+    struct progress_cb_data *cbctx = context;
+    if (handle == cbctx->fd)
+    {
+        int percent;
+        cbctx->count= now_completed;
+        percent = MIN(100, (int) (((double) cbctx->count) * 100.0f / ((double) cbctx->size)));
+        if (percent != cbctx->oldvalue)
+        {
+            do_line("%s: [%3i%%]", cbctx->filename, percent);
+            cbctx->oldvalue = percent;
+        }
+    }
+    else /* archives or stdin */
+        do_rotate(cbctx, "%s: [%c]");
+
+    return 1;
+}
+
 #ifdef C_LINUX
 dev_t procdev;
 #endif
@@ -431,6 +511,13 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
         goto done;
     }
 
+    scan_progress_ctx.count = 0;
+    scan_progress_ctx.fd = fd;
+    scan_progress_ctx.oldvalue = 0;
+    scan_progress_ctx.filename = filename;
+    scan_progress_ctx.size = lseek(fd, 0, SEEK_END);
+    lseek(fd, 0, SEEK_SET);
+
     data.chain    = &chain;
     data.filename = filename;
 
@@ -666,6 +753,12 @@ static int scanstdin(const struct cl_engine *engine, const struct optstruct *opt
     const char *file_type_hint = NULL;
     char **file_type_out       = NULL;
     char *file_type            = NULL;
+
+    scan_progress_ctx.count = 0;
+    scan_progress_ctx.oldvalue = 0;
+    scan_progress_ctx.fd = fileno(stdin);
+    scan_progress_ctx.filename = "stdin";
+    scan_progress_ctx.size = -1;
 
     tmpdir = cl_engine_get_str(engine, CL_ENGINE_TMPDIR, NULL);
     if (NULL == tmpdir) {
@@ -1266,17 +1359,29 @@ int scanmanager(const struct optstruct *opts)
 
     cl_engine_set_clcb_virus_found(engine, clamscan_virus_found_cb);
 
-    if (isatty(fileno(stdout)) &&
+    int show_progress = optget(opts, "show-progress")->enabled;
+
+    if (isatty(fileno(stdout)) && (show_progress || (
         !optget(opts, "debug")->enabled &&
         !optget(opts, "quiet")->enabled &&
         !optget(opts, "infected")->enabled &&
-        !optget(opts, "no-summary")->enabled) {
+        !optget(opts, "no-summary")->enabled))) {
         /* set progress callbacks */
         cl_engine_set_clcb_sigload_progress(engine, sigload_callback, &sigload_progress_ctx);
         cl_engine_set_clcb_engine_compile_progress(engine, engine_compile_callback, &engine_compile_progress_ctx);
 #ifdef ENABLE_ENGINE_FREE_PROGRESSBAR
         cl_engine_set_clcb_engine_free_progress(engine, engine_free_callback, &engine_free_progress_ctx);
 #endif
+    }
+
+    if (show_progress) {
+#ifdef _WIN32
+        console = GetStdHandle(STD_OUTPUT_HANDLE);
+        if (GetFileType(console) != FILE_TYPE_CHAR)
+            console = NULL;
+#endif
+        memset(&scan_progress_ctx, 0, sizeof(struct progress_cb_data));
+        cl_engine_set_clcb_scan_progress(engine, scan_progress_cb, &scan_progress_ctx);
     }
 
     if ((opt = optget(opts, "cache-size"))->enabled)
