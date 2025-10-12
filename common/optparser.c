@@ -717,6 +717,7 @@ const struct clam_option *clam_options = __clam_options;
  *     const char *localdbdir = optget(opts, "datadir")->strarg;
  * ```
  */
+typedef BOOL (WINAPI *imp_IsWow64Process)(HANDLE hProcess, PBOOL Wow64Process);
 static void fix_paths(void)
 {
     bool have_db_dir    = false;
@@ -726,7 +727,19 @@ static void fix_paths(void)
     DWORD sizof;
     HKEY key;
 
-    if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, CLAMKEY, 0, KEY_QUERY_VALUE, &key) == ERROR_SUCCESS || RegOpenKeyEx(HKEY_CURRENT_USER, CLAMKEY, 0, KEY_QUERY_VALUE, &key) == ERROR_SUCCESS) {
+    BOOL bIsWow64 = FALSE;
+    HMODULE kernel32 = GetModuleHandleW(L"kernel32");
+    if (kernel32) {
+        imp_IsWow64Process pIsWow64Process = (imp_IsWow64Process)GetProcAddress(kernel32, "IsWow64Process");
+        if (pIsWow64Process)
+            pIsWow64Process(GetCurrentProcess(), &bIsWow64);
+    }
+
+    DWORD flags = KEY_QUERY_VALUE;
+    if (bIsWow64)
+        flags |= KEY_WOW64_64KEY;
+
+    if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, CLAMKEY, 0, flags, &key) == ERROR_SUCCESS || RegOpenKeyEx(HKEY_CURRENT_USER, CLAMKEY, 0, KEY_QUERY_VALUE, &key) == ERROR_SUCCESS) {
         sizof = sizeof(path);
         if (RegQueryValueEx(key, "DataDir", 0, NULL, path, &sizof) == ERROR_SUCCESS) {
             have_db_dir = true;
