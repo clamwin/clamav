@@ -264,7 +264,13 @@ int walkmodules_th(proc_callback callback, void *data, struct mem_info *info)
                 logg(LOGG_WARNING, "Cannot map filename to ANSI codepage\n");
                 continue;
             }
-            strcpy(me32.szExePath, converted);
+            if (strlen(converted) >= MAX_PATH) {
+                logg(LOGG_WARNING, "Converted module path exceeds MAX_PATH, skipping module: %s\n",
+                     converted);
+                free(converted);
+                continue;
+            }
+            memcpy(me32.szExePath, converted, strlen(converted) + 1);
             free(converted);
         } else {
             CloseHandle(hFile);
