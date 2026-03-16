@@ -333,13 +333,11 @@ pub unsafe extern "C" fn codesign_verifier_new(
     let certs_directory = match Path::new(certs_directory_str).canonicalize() {
         Ok(p) => p,
         Err(e) => {
-            return ffi_error!(
-                err = err,
-                Error::CannotVerify(format!(
-                    "Invalid certs directory '{}': {}",
-                    certs_directory_str, e
-                ))
+            debug!(
+                "Cannot canonicalize certs directory '{}': {}, using as-is",
+                certs_directory_str, e
             );
+            PathBuf::from(certs_directory_str)
         }
     };
 
@@ -564,13 +562,78 @@ pub struct Verifier {
 }
 
 impl Verifier {
+    /// Load the embedded clamav.crt certificate from the DLL resources (Windows only).
+    #[cfg(target_os = "windows")]
+    fn load_cert_from_resource() -> Option<Vec<u8>> {
+        const IDR_CLAMAV_CRT: u16 = 101;
+
+        #[allow(non_camel_case_types)]
+        type HMODULE = *mut c_void;
+        #[allow(non_camel_case_types)]
+        type HRSRC = *mut c_void;
+        #[allow(non_camel_case_types)]
+        type HGLOBAL = *mut c_void;
+
+        extern "system" {
+            fn GetModuleHandleW(lpModuleName: *const u16) -> HMODULE;
+            fn FindResourceW(hModule: HMODULE, lpName: *const u16, lpType: *const u16) -> HRSRC;
+            fn LoadResource(hModule: HMODULE, hResInfo: HRSRC) -> HGLOBAL;
+            fn LockResource(hResData: HGLOBAL) -> *const u8;
+            fn SizeofResource(hModule: HMODULE, hResInfo: HRSRC) -> u32;
+        }
+
+        // RT_RCDATA = 10
+        const RT_RCDATA: usize = 10;
+        // MAKEINTRESOURCE macro: cast integer to pointer
+        let res_id = IDR_CLAMAV_CRT as usize as *const u16;
+        let res_type = RT_RCDATA as *const u16;
+
+        // Encode "libclamav.dll" as wide string
+        let dll_name: Vec<u16> = "libclamav.dll\0".encode_utf16().collect();
+
+        unsafe {
+            let hmodule = GetModuleHandleW(dll_name.as_ptr());
+            if hmodule.is_null() {
+                debug!("Failed to get module handle for libclamav.dll");
+                return None;
+            }
+
+            let hresource = FindResourceW(hmodule, res_id, res_type);
+            if hresource.is_null() {
+                debug!("Certificate resource not found in libclamav.dll");
+                return None;
+            }
+
+            let hglobal = LoadResource(hmodule, hresource);
+            if hglobal.is_null() {
+                debug!("Failed to load certificate resource");
+                return None;
+            }
+
+            let size = SizeofResource(hmodule, hresource) as usize;
+            if size == 0 {
+                debug!("Certificate resource is empty");
+                return None;
+            }
+
+            let data_ptr = LockResource(hglobal);
+            if data_ptr.is_null() {
+                debug!("Failed to lock certificate resource");
+                return None;
+            }
+
+            Some(std::slice::from_raw_parts(data_ptr, size).to_vec())
+        }
+    }
+
     pub fn new(certs_directory: &Path) -> Result<Self, Error> {
         // create store with root CA
         let mut store_builder = X509StoreBuilder::new()?;
 
         let mut root_common_names = Vec::<String>::new();
 
-        for file in std::fs::read_dir(certs_directory)? {
+        if let Ok(dir_entries) = std::fs::read_dir(certs_directory) {
+        for file in dir_entries {
             let file = file?;
             let path = file.path();
             if path.is_file() {
@@ -603,6 +666,21 @@ impl Verifier {
                         debug!("Adding certificate to verifier store: {:?}", cert);
                         store_builder.add_cert(cert.clone())?;
                     }
+                }
+            }
+        }
+        }
+
+        // Fallback: if no certificates were loaded from the directory,
+        // try loading the embedded certificate from DLL resources (Windows only).
+        #[cfg(target_os = "windows")]
+        if root_common_names.is_empty() {
+            if let Some(cert_data) = Self::load_cert_from_resource() {
+                debug!("Loading embedded certificate from DLL resources");
+                let certs = X509::stack_from_pem(&cert_data)?;
+                for cert in certs {
+                    debug!("Adding embedded certificate to verifier store: {:?}", cert);
+                    store_builder.add_cert(cert)?;
                 }
             }
         }
