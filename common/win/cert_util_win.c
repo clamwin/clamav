@@ -84,7 +84,21 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
         x509 = NULL;
         x509 = d2i_X509(NULL, &encoded_cert, pWinCertContext->cbCertEncoded);
         if (NULL == x509) {
-            mprintf(LOGG_ERROR, "Failed to convert system certificate to x509.\n");
+            char subjectName[256] = {0};
+            CertGetNameStringA(pWinCertContext, CERT_NAME_SIMPLE_DISPLAY_TYPE,
+                            0, NULL, subjectName, sizeof(subjectName));
+
+            BYTE sha1Hash[20] = {0};
+            DWORD hashSize = sizeof(sha1Hash);
+            char thumbprint[41] = {0};
+            if (CertGetCertificateContextProperty(pWinCertContext, CERT_HASH_PROP_ID, sha1Hash, &hashSize)) {
+                for (DWORD i = 0; i < hashSize; i++) {
+                    sprintf(thumbprint + (i * 2), "%02X", sha1Hash[i]);
+                }
+            }
+
+            mprintf(LOGG_ERROR, "Failed to convert system certificate to x509: "
+                    "%s (%s)\n", subjectName, thumbprint);
             continue;
         }
 
