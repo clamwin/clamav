@@ -217,6 +217,13 @@ cl_unrar_error_t unrar_open(const char* filename, void** hArchive, char** commen
     archiveData->ArcName  = (char*)filename;
     archiveData->OpenMode = RAR_OM_EXTRACT;
     archiveData->OpFlags |= ROADOF_KEEPBROKEN;
+#if defined(_WIN32) && defined(ROADOF_SHARED)
+    /* fmap_dump_to_file keeps its O_RDWR descriptor open during extraction.
+     * Allow write-sharing when UnRAR reopens that file, otherwise Windows
+     * rejects the second handle with ERROR_SHARING_VIOLATION.
+     */
+    archiveData->OpFlags |= ROADOF_SHARED;
+#endif
     archiveData->CmtBuf = (char*)calloc(1, CMTBUFSIZE);
     if (archiveData->CmtBuf == NULL) {
         unrar_dbgmsg("unrar_open: Not enough memory to allocate main archive header comment buffer.\n");
