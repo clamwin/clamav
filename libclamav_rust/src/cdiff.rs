@@ -231,6 +231,9 @@ pub enum ProcessingError {
     #[error("Conflicting actions found for line {0}")]
     ConflictingAction(usize),
 
+    #[error("{0} for {1:?}: {2}")]
+    FileOperation(&'static str, PathBuf, #[source] std::io::Error),
+
     ///
     /// Generic remaps
     ///
@@ -765,6 +768,43 @@ fn cmd_xchg(ctx: &mut Context, xchg_op: XchgOp) -> Result<(), InputError> {
     Ok(())
 }
 
+fn replace_database_file(
+    replacement: tempfile::NamedTempFile,
+    database: &Path,
+) -> Result<(), ProcessingError> {
+    // Close the file handle before Windows tries to rename it. TempPath still
+    // cleans up the replacement if removing or renaming the files fails.
+    let replacement = replacement.into_temp_path();
+    #[cfg(windows)]
+    fs::remove_file(database).map_err(|e| {
+        ProcessingError::FileOperation("remove old database file", database.to_owned(), e)
+    })?;
+
+    fs::rename(&replacement, database).map_err(|e| {
+        ProcessingError::FileOperation("rename replacement database file", database.to_owned(), e)
+    })
+}
+
+fn open_database_for_append(database: &Path, create: bool) -> std::io::Result<File> {
+    let mut options = OpenOptions::new();
+    options.create(create).append(true);
+    let result = options.open(database);
+
+    #[cfg(windows)]
+    {
+        const ERROR_INVALID_PARAMETER: i32 = 87;
+        // Win9x rejects the access mask used by Rust for append-only opens.
+        // CDIFF works on private database copies, so seeking to EOF is enough.
+        if matches!(&result, Err(e) if e.raw_os_error() == Some(ERROR_INVALID_PARAMETER)) {
+            let mut file = options.append(false).write(true).open(database)?;
+            file.seek(SeekFrom::End(0))?;
+            return Ok(file);
+        }
+    }
+
+    result
+}
+
 /// Move range of lines from one DB file into another
 fn cmd_move(ctx: &mut Context, move_op: MoveOp) -> Result<(), InputError> {
     #[derive(PartialEq, Debug)]
@@ -782,10 +822,9 @@ fn cmd_move(ctx: &mut Context, move_op: MoveOp) -> Result<(), InputError> {
     }
 
     // Open dst in append mode
-    let mut dst_file = OpenOptions::new()
-        .append(true)
-        .open(&move_op.dst)
-        .map_err(|e| InputError::Processing(e.into()))?;
+    let mut dst_file = open_database_for_append(&move_op.dst, false).map_err(|e| {
+        ProcessingError::FileOperation("open database for append", move_op.dst.clone(), e)
+    })?;
 
     // Create tmp file and open for writing
     let tmp_named_file = tempfile::Builder::new()
@@ -847,10 +886,8 @@ fn cmd_move(ctx: &mut Context, move_op: MoveOp) -> Result<(), InputError> {
         return Err(ProcessingError::MoveOpFailed.into());
     }
 
-    // Delete src and replace it with tmp
-    #[cfg(windows)]
-    fs::remove_file(&move_op.src).map_err(ProcessingError::from)?;
-    fs::rename(tmp_named_file.path(), &move_op.src).map_err(ProcessingError::from)?;
+    drop(dst_file);
+    replace_database_file(tmp_named_file, &move_op.src)?;
 
     Ok(())
 }
@@ -861,19 +898,23 @@ fn cmd_close(ctx: &mut Context) -> Result<(), InputError> {
         .open_db
         .take()
         .ok_or(InputError::NoDBForAction("CLOSE"))?;
+    let operation_error = |operation, error| {
+        ProcessingError::FileOperation(operation, PathBuf::from(&open_db), error)
+    };
 
     let mut edits = ctx.edits.iter_mut();
     let mut next_edit = edits.next();
 
     if next_edit.is_some() {
         // Open src in read-only mode
-        let mut src_reader = BufReader::new(File::open(&open_db).map_err(ProcessingError::from)?);
+        let mut src_reader =
+            BufReader::new(File::open(&open_db).map_err(|e| operation_error("open database", e))?);
 
         // Create tmp file and open for writing
         let tmp_named_file = tempfile::Builder::new()
             .prefix("_tmp_move_file")
             .tempfile_in("./")
-            .map_err(ProcessingError::from)?;
+            .map_err(|e| operation_error("create replacement file", e))?;
         let tmp_file = tmp_named_file.as_file();
         let mut tmp_file = BufWriter::new(tmp_file);
 
@@ -882,7 +923,7 @@ fn cmd_close(ctx: &mut Context) -> Result<(), InputError> {
             linebuf.clear();
             let n_read = src_reader
                 .read_until(b'\n', &mut linebuf)
-                .map_err(ProcessingError::from)?;
+                .map_err(|e| operation_error("read database", e))?;
             if n_read == 0 {
                 // No more input
                 break;
@@ -930,8 +971,8 @@ fn cmd_close(ctx: &mut Context) -> Result<(), InputError> {
             if let Some(new_line) = new_line {
                 tmp_file
                     .write_all(new_line)
-                    .map_err(ProcessingError::from)?;
-                tmp_file.write_all(b"\n").map_err(ProcessingError::from)?;
+                    .and_then(|_| tmp_file.write_all(b"\n"))
+                    .map_err(|e| operation_error("write replacement file", e))?;
             }
         }
 
@@ -953,37 +994,19 @@ fn cmd_close(ctx: &mut Context) -> Result<(), InputError> {
         // Clean up the context
         ctx.edits.clear();
 
-        // Flush and close the temporary file.
-        // On Windows, it must be closed before it can be renamed.
-        let tmpfile_path = {
-            let _ = tmp_file.into_inner().unwrap();
-            let (_, path) = tmp_named_file.into_parts();
-            path
-        };
-
-        // Replace the file in-place
-        #[cfg(windows)]
-        if let Err(e) = fs::remove_file(&open_db) {
-            // Try to remove the tempfile, since we failed to remove the original
-            fs::remove_file(tmpfile_path).map_err(ProcessingError::from)?;
-            return Err(ProcessingError::from(e).into());
-        }
-        if let Err(e) = fs::rename(&tmpfile_path, &open_db) {
-            fs::remove_file(&tmpfile_path).map_err(ProcessingError::from)?;
-            return Err(ProcessingError::from(e).into());
-        }
+        tmp_file
+            .into_inner()
+            .map_err(|e| operation_error("flush replacement file", e.into_error()))?;
+        replace_database_file(tmp_named_file, Path::new(&open_db))?;
     }
 
     // Test for lines to add
     if !ctx.additions.is_empty() {
-        let mut db_file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&open_db)
-            .map_err(ProcessingError::from)?;
+        let mut db_file = open_database_for_append(Path::new(&open_db), true)
+            .map_err(|e| operation_error("open database for append", e))?;
         db_file
             .write_all(&ctx.additions)
-            .map_err(ProcessingError::from)?;
+            .map_err(|e| operation_error("append to database", e))?;
         ctx.additions.clear();
     }
 
